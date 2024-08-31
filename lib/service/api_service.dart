@@ -7,8 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as path;
 
 class ApiService {
-  final String baseUrl = "http://10.10.0.39:500/api/";
-  final String baseUrlImg = "http://10.10.0.39:500/";
+  final String baseUrl = "http://10.10.0.79:500/api/";
+  final String baseUrlImg = "http://10.10.0.79:500/";
 
   Future<Map<String, dynamic>> post(String endpoint, Map<String, dynamic> body) async {
     final prefs = await SharedPreferences.getInstance();
@@ -264,26 +264,7 @@ class ApiService {
       throw Exception('Failed to store balance');
     }
   }
-  // Future<Map<String, dynamic>> getUserProfile() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   final token = prefs.getString('token') ?? '';
-  //
-  //   final url = Uri.parse(baseUrl + 'user-profile');
-  //   final response = await http.get(
-  //     url,
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //       "Authorization": "Bearer $token",
-  //     },
-  //   );
-  //
-  //   if (response.statusCode == 200) {
-  //     print(response);
-  //     return jsonDecode(response.body);
-  //   } else {
-  //     throw Exception('Failed to load user profile');
-  //   }
-  // }
+
   Future<Map<String, dynamic>> getUserProfile() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token') ?? '';
@@ -339,5 +320,53 @@ class ApiService {
       throw Exception('Failed to update profile: ${response.body}');
     }
   }
+  Future<List<Map<String, dynamic>>> getGigsForUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
 
+    final url = Uri.parse('${baseUrl}all-gigs-foruser');
+    final response = await http.get(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    if (response.statusCode == 200) {
+      try {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        if (data.containsKey('gigs') && data['gigs'] is List) {
+          return List<Map<String, dynamic>>.from(data['gigs']);
+        } else {
+          throw Exception('Invalid data format: gigs not found or not a list');
+        }
+      } catch (e) {
+        print('Error parsing JSON: $e');
+        throw Exception('Failed to parse gigs data');
+      }
+    } else {
+      throw Exception('Failed to load gigs');
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteGig(int gigId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+
+    final url = Uri.parse('${baseUrl}delete-gig/$gigId');
+    final response = await http.delete(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to delete job: ${response.body}');
+    }
+  }
 }

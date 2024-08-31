@@ -1,16 +1,16 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
 
-import 'package:work_zone/widgets/bottom_navigation_bar_buyer.dart';
+import 'package:flutter/material.dart';
+import 'package:work_zone/widgets/bottom_navigation_bar_seller.dart';
 
-class BuyerOrder extends StatefulWidget {
-  const BuyerOrder({Key? key}) : super(key: key);
+class SellerOrder extends StatefulWidget {
+  const SellerOrder({super.key});
 
   @override
-  State<BuyerOrder> createState() => _BuyerOrderState();
+  State<SellerOrder> createState() => _SellerOrderState();
 }
 
-class _BuyerOrderState extends State<BuyerOrder> with SingleTickerProviderStateMixin {
+class _SellerOrderState  extends State<SellerOrder> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   List<String> tabs = ['Active', 'Pending', 'Completed', 'Cancelled'];
 
@@ -34,15 +34,7 @@ class _BuyerOrderState extends State<BuyerOrder> with SingleTickerProviderStateM
       amount: 10.00,
       status: 'Pending',
     ),
-    // OrderCard(
-    //   orderId: 'F025E17',
-    //   orderDate: DateTime(2024, 8, 17),
-    //   duration: Duration(days: 1),
-    //   seller: 'Jane Smith',
-    //   title: 'Logo Design',
-    //   amount: 3.00,
-    //   status: 'Completed',
-    // ),
+
     OrderCard(
       orderId: 'F025E18',
       orderDate: DateTime(2024, 8, 17),
@@ -112,7 +104,7 @@ class _BuyerOrderState extends State<BuyerOrder> with SingleTickerProviderStateM
           ),
         ],
       ),
-      bottomNavigationBar: CustomBottomNavigationBarBuyer(currentIndex: 3),
+      bottomNavigationBar: CustomBottomNavigationBarSeller(currentIndex: 3),
     );
   }
 }

@@ -1,219 +1,161 @@
-// import 'package:flutter/material.dart';
-// import 'package:work_zone/widgets/bottom_navigation_bar.dart';
-// import 'package:work_zone/widgets/colors.dart';
-// import 'package:work_zone/service/api_service.dart';
-// import 'package:intl/intl.dart';
-//
-// import 'buyer_create_job_post.dart';
-// import 'buyer_edit_job_post.dart';
-//
-// class JobPostPage extends StatefulWidget {
-//   @override
-//   _JobPostPageState createState() => _JobPostPageState();
-// }
-//
-// class _JobPostPageState extends State<JobPostPage> {
-//   final ApiService apiService = ApiService();
-//   List<dynamic> jobs = [];
-//   bool isLoading = true;
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     fetchJobs();
-//   }
-//
-//   Future<void> fetchJobs() async {
-//     try {
-//       final fetchedJobs = await apiService.getJobs();
-//       setState(() {
-//         jobs = fetchedJobs;
-//         isLoading = false;
-//       });
-//     } catch (e) {
-//       print('Error fetching jobs: $e');
-//       setState(() {
-//         isLoading = false;
-//       });
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         SnackBar(content: Text('Failed to load jobs. Please try again.')),
-//       );
-//     }
-//   }
-//
-//   Future<void> _deleteJob(int jobId) async {
-//     try {
-//       await apiService.deleteJob(jobId);
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         SnackBar(content: Text('Job deleted successfully')),
-//       );
-//       fetchJobs(); // Refresh the job list after deleting
-//     } catch (e) {
-//       print('Error deleting job: $e');
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         SnackBar(content: Text('Failed to delete job. Please try again.')),
-//       );
-//     }
-//   }
-//
-//   Future<void> _showDeleteConfirmationDialog(int jobId) async {
-//     return showDialog<void>(
-//       context: context,
-//       barrierDismissible: false,
-//       builder: (BuildContext context) {
-//         return AlertDialog(
-//           title: Text('Confirm Delete'),
-//           content: SingleChildScrollView(
-//             child: ListBody(
-//               children: <Widget>[
-//                 Text('Are you sure you want to delete this job?'),
-//                 Text('This action cannot be undone.'),
-//               ],
-//             ),
-//           ),
-//           actions: <Widget>[
-//             TextButton(
-//               child: Text('Cancel'),
-//               onPressed: () {
-//                 Navigator.of(context).pop();
-//               },
-//             ),
-//             TextButton(
-//               child: Text('Delete'),
-//               onPressed: () {
-//                 Navigator.of(context).pop();
-//                 _deleteJob(jobId);
-//               },
-//             ),
-//           ],
-//         );
-//       },
-//     );
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         leading: IconButton(
-//           icon: Icon(Icons.arrow_back),
-//           onPressed: () => Navigator.pop(context),
-//         ),
-//         title: Text('Job Posts'),
-//       ),
-//       body: isLoading
-//           ? Center(child: CircularProgressIndicator())
-//           : RefreshIndicator(
-//         onRefresh: fetchJobs,
-//         child: jobs.isEmpty
-//             ? Center(child: Text('No jobs found'))
-//             : ListView.builder(
-//           itemCount: jobs.length,
-//           itemBuilder: (context, index) {
-//             return _buildJobCard(context, jobs[index]);
-//           },
-//         ),
-//       ),
-//       floatingActionButton: FloatingActionButton(
-//         onPressed: () async {
-//           await Navigator.push(
-//             context,
-//             MaterialPageRoute(builder: (context) => AddJobPostPage()),
-//           );
-//           fetchJobs(); // Refresh the job list after adding a new job
-//         },
-//         child: Icon(Icons.add),
-//         backgroundColor: lime300,
-//         foregroundColor: white,
-//       ),
-//       bottomNavigationBar: CustomBottomNavigationBar(currentIndex: 2),
-//     );
-//   }
-//
-//   Widget _buildJobCard(BuildContext context, dynamic job) {
-//     final imageUrl = job['gig_img'] != null
-//         ? '${apiService.baseUrlImg}${job['gig_img']}'
-//         : 'https://cdn-icons-png.flaticon.com/128/13434/13434972.png';
-//     print(imageUrl);
-//
-//     return Padding(
-//       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//       child: Card(
-//         elevation: 4,
-//         shape: RoundedRectangleBorder(
-//           borderRadius: BorderRadius.circular(12),
-//         ),
-//         child: Padding(
-//           padding: const EdgeInsets.all(16.0),
-//           child: Row(
-//             crossAxisAlignment: CrossAxisAlignment.start,
-//             children: [
-//               ClipRRect(
-//                 borderRadius: BorderRadius.circular(8),
-//                 child: Image.network(
-//                   imageUrl,
-//                   width: 100,
-//                   height: 180,
-//                   fit: BoxFit.cover,
-//                   errorBuilder: (context, error, stackTrace) => Container(
-//                     width: 80,
-//                     height: 80,
-//                     color: Colors.grey[200],
-//                     child: Icon(Icons.image, color: Colors.grey[400]),
-//                   ),
-//                 ),
-//               ),
-//               SizedBox(width: 16),
-//               Expanded(
-//                 child: Column(
-//                   crossAxisAlignment: CrossAxisAlignment.start,
-//                   children: [
-//                     // ... (keep existing job details)
-//                     Row(
-//                       children: [
-//                         IconButton(
-//                           icon: Icon(Icons.edit),
-//                           onPressed: () async {
-//                             await Navigator.push(
-//                               context,
-//                               MaterialPageRoute(
-//                                 builder: (context) => BuyerJobEditPage(jobId: job['id']),
-//                               ),
-//                             );
-//                             fetchJobs();
-//                           },
-//                         ),
-//                         IconButton(
-//                           icon: Icon(Icons.delete),
-//                           onPressed: () {
-//                             _showDeleteConfirmationDialog(job['id']);
-//                           },
-//                         ),
-//                         IconButton(
-//                           icon: Icon(Icons.visibility),
-//                           onPressed: () {
-//                             // Handle eye action
-//                           },
-//                         ),
-//                       ],
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-//
-//   String _formatDate(String? dateString) {
-//     if (dateString == null) return 'No Date';
-//     try {
-//       final date = DateTime.parse(dateString);
-//       return DateFormat('yyyy-MM-dd').format(date);
-//     } catch (e) {
-//       return 'Invalid Date';
-//     }
-//   }
-// }
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:work_zone/pages/seller/seller_create_gig.dart';
+
+import '../../widgets/bottom_navigation_bar_seller.dart';
+
+class SellerManageGig extends StatefulWidget {
+  @override
+  _SellerManageGigState createState() => _SellerManageGigState();
+}
+
+class _SellerManageGigState extends State<SellerManageGig> {
+  final List<Map<String, dynamic>> dummyGigs = [
+    {
+      'image': 'lib/assets/img/others/1.png',
+      'price': 30000.00,
+      'rating': 4.8,
+      'ratingCount': 2000,
+      'title': 'Professional Laravel Development & API Integration',
+      'sellerName': 'Moaze seller',
+    },
+    {
+      'image': 'lib/assets/img/others/1.png',
+      'price': 25000.00,
+      'rating': 4.5,
+      'ratingCount': 1500,
+      'title': 'Full Stack Web Development with React and Node.js',
+      'sellerName': 'John Doe',
+    },
+    // Add more dummy gigs as needed
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: Text('Manage Gig'),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              // Handle create new gig action
+              Get.to(()=> SellerCreateGig());
+            },
+            child: Text('Create a new Gig'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+      body: ListView.builder(
+        itemCount: dummyGigs.length,
+        itemBuilder: (context, index) {
+          return _buildGigCard(dummyGigs[index]);
+        },
+      ),
+      bottomNavigationBar: CustomBottomNavigationBarSeller(currentIndex: 2),
+    )
+    ;
+  }
+
+  Widget _buildGigCard(Map<String, dynamic> gig) {
+    return Card(
+      margin: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
+            child: Image.asset(
+              gig['image'],
+              height: 200,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Pkr ${gig['price'].toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Icon(Icons.star, color: Colors.amber, size: 20),
+                        Text(
+                          '${gig['rating']} (${gig['ratingCount']})',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                Text(
+                  gig['title'],
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundImage: NetworkImage('https://example.com/avatar.jpg'),
+                      radius: 12,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      gig['sellerName'],
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        // Handle edit gig action
+                      },
+                      child: Text('Edit Gig'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        // Handle delete gig action
+                      },
+                      child: Text('Delete Gig'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

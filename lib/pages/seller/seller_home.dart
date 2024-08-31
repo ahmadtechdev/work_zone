@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:work_zone/widgets/bottom_navigation_bar_buyer.dart';
-import 'package:work_zone/widgets/colors.dart';
+import 'package:work_zone/widgets/bottom_navigation_bar_seller.dart';
 
-class BuyerHome extends StatefulWidget {
+import '../../widgets/colors.dart';
+
+class SellerDashboard extends StatefulWidget {
+  const SellerDashboard({super.key});
+
   @override
-  _BuyerHomeState createState() => _BuyerHomeState();
+  State<SellerDashboard> createState() => _SellerDashboardState();
 }
 
-class _BuyerHomeState extends State<BuyerHome> {
-
-
+class _SellerDashboardState extends State<SellerDashboard> {
   @override
   Widget build(BuildContext context) {
     // Get the passed arguments
@@ -34,7 +35,7 @@ class _BuyerHomeState extends State<BuyerHome> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(userName),
-                Text('I\'m a Client', style: TextStyle(fontSize: 12)),
+                Text('I\'m a Seller', style: TextStyle(fontSize: 12)),
               ],
             ),
           ],
@@ -52,8 +53,7 @@ class _BuyerHomeState extends State<BuyerHome> {
               SearchBar(),
               SizedBox(height: 20),
               GetMatchedCard(),
-              SizedBox(height: 20),
-              CategorySection(),
+
               SizedBox(height: 20),
               PopularServicesSection(),
               SizedBox(height: 20),
@@ -64,7 +64,7 @@ class _BuyerHomeState extends State<BuyerHome> {
           ),
         ),
       ),
-      bottomNavigationBar: CustomBottomNavigationBarBuyer(currentIndex: 0),
+      bottomNavigationBar: CustomBottomNavigationBarSeller(currentIndex: 0),
     );
   }
 }
@@ -99,12 +99,12 @@ class GetMatchedCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Get Matched\nWith Sellers', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text('Get Matched\nWith Buyers', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   SizedBox(height: 10),
                   ElevatedButton(
                     onPressed: () {},
                     child: Text('Post a Request'),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                    style: ElevatedButton.styleFrom(backgroundColor: lime300, foregroundColor: white),
                   ),
                 ],
               ),
@@ -117,58 +117,6 @@ class GetMatchedCard extends StatelessWidget {
   }
 }
 
-class CategorySection extends StatelessWidget {
-  final List<Map<String, dynamic>> categories = [
-    {'name': 'Graphics Design', 'icon': Icons.brush},
-    {'name': 'Video Editing', 'icon': Icons.videocam},
-    {'name': 'Digital Marketing', 'icon': Icons.shop},
-    {'name': 'Business', 'icon': Icons.business_center},
-    {'name': 'Business', 'icon': Icons.business_center},
-    {'name': 'Business', 'icon': Icons.business_center},
-    {'name': 'Business', 'icon': Icons.business_center},
-    // Add more categories as needed
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Categories', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            TextButton(onPressed: () {}, child: Text('View All')),
-          ],
-        ),
-        SizedBox(height: 10),
-        SizedBox(
-          height: 100,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: categories.length,
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: EdgeInsets.only(right: 16),
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundColor: lime300,
-                      child: Icon(categories[index]['icon'], color: Colors.white),
-                    ),
-                    SizedBox(height: 5),
-                    Text(categories[index]['name'], style: TextStyle(fontSize: 12)),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class PopularServicesSection extends StatelessWidget {
   @override
@@ -179,7 +127,7 @@ class PopularServicesSection extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Popular Services', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Your Popular Services', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             TextButton(onPressed: () {}, child: Text('View All')),
           ],
         ),
@@ -295,7 +243,7 @@ class TopSellersSection extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Top Sellers', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Top Clients', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             TextButton(onPressed: () {}, child: Text('View All')),
           ],
         ),

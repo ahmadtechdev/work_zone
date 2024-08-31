@@ -6,12 +6,12 @@ import 'package:work_zone/pages/buyer/buyer_order.dart';
 import 'package:work_zone/pages/buyer/buyer_profile.dart';
 import 'package:work_zone/widgets/colors.dart'; // Import the Get package
 
-class CustomBottomNavigationBar extends StatelessWidget {
+class CustomBottomNavigationBarBuyer extends StatelessWidget {
   final int currentIndex;
   final Color selectedItemColor;
   final Color unselectedItemColor;
 
-  const CustomBottomNavigationBar({
+  const CustomBottomNavigationBarBuyer({
     super.key,
     required this.currentIndex,
     this.selectedItemColor = lime300,

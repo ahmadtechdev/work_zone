@@ -1,22 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:work_zone/pages/buyer/buyer_change_password.dart';
-import 'package:work_zone/pages/buyer/buyer_dashboard.dart';
-import 'package:work_zone/pages/buyer/buyer_delete_account.dart';
-import 'package:work_zone/pages/buyer/buyer_my_account.dart';
-import 'package:work_zone/pages/buyer/buyer_my_profile.dart';
-import 'package:work_zone/widgets/bottom_navigation_bar_buyer.dart';
+import 'package:work_zone/pages/seller/seller_delete_account.dart';
+import 'package:work_zone/widgets/bottom_navigation_bar_seller.dart';
+
 import '../../service/api_service.dart';
 import '../signin.dart';
+import 'seller_change_password.dart';
 
-class BuyerProfile extends StatefulWidget {
-  const BuyerProfile({super.key});
+class SellerProfile extends StatefulWidget {
+  const SellerProfile({super.key});
 
   @override
-  State<BuyerProfile> createState() => _BuyerProfileState();
+  State<SellerProfile> createState() => _SellerProfileState();
 }
 
-class _BuyerProfileState extends State<BuyerProfile> {
+class _SellerProfileState extends State<SellerProfile> {
   @override
   Widget build(BuildContext context) {
     final ApiService apiService = ApiService();
@@ -37,15 +35,15 @@ class _BuyerProfileState extends State<BuyerProfile> {
             child: ListView(
               children: [
                 _buildListItem(Icons.person, 'My Profile', Colors.green,() {
-                  Get.to(()=> BuyerMyProfile());
+                  // Get.to(()=> BuyerMyProfile());
                 }),
                 _buildListItem(
                     Icons.dashboard, 'Dashboard', Colors.blue, () {
-                      Get.to(()=>BuyerDashboard());
+                  // Get.to(()=>BuyerDashboard());
                 }),
                 _buildListItem(
                     Icons.account_balance_wallet, 'My Account', Colors.orange,() {
-                    Get.to(()=> BuyerMyAccount());
+                  // Get.to(()=> BuyerMyAccount());
                 }),
                 _buildListItem(Icons.swap_horiz, 'Transaction', Colors.red,() {}),
                 _buildListItem(Icons.favorite, 'Favorite', Colors.purple,() {}),
@@ -54,10 +52,10 @@ class _BuyerProfileState extends State<BuyerProfile> {
                 _buildListItem(Icons.settings, 'Setting', Colors.pink,() {}),
                 _buildListItem(
                     Icons.person_add, 'Change Password', Colors.green,() {
-                  Get.to(()=>BuyerUpdatePassword());
+                  Get.to(()=>SellerUpdatePassword());
                 }),
                 _buildListItem(Icons.no_accounts, 'Delete Account', Colors.red,() {
-                  Get.to(()=>BuyerDeleteAccount());
+                  Get.to(()=>SellerDeleteAccount());
                 }),
                 _buildListItem(Icons.exit_to_app, 'Log Out', Colors.orange,() async {
 
@@ -112,7 +110,7 @@ class _BuyerProfileState extends State<BuyerProfile> {
           // _buildBottomNavBar(),
         ],
       ),
-      bottomNavigationBar: CustomBottomNavigationBarBuyer(currentIndex: 4),
+      bottomNavigationBar: CustomBottomNavigationBarSeller(currentIndex: 4),
     );
   }
 
@@ -124,7 +122,7 @@ class _BuyerProfileState extends State<BuyerProfile> {
           CircleAvatar(
             radius: 30,
             backgroundImage:
-                AssetImage('lib/assets/img/others/1.png'), // Add your image
+            AssetImage('lib/assets/img/others/1.png'), // Add your image
           ),
           SizedBox(width: 16),
           Column(

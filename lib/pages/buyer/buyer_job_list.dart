@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:work_zone/widgets/bottom_navigation_bar.dart';
+import 'package:work_zone/widgets/bottom_navigation_bar_buyer.dart';
 import 'package:work_zone/widgets/colors.dart';
 import 'package:work_zone/service/api_service.dart';
 import 'package:intl/intl.dart';
@@ -127,7 +127,7 @@ class _JobPostPageState extends State<JobPostPage> {
         backgroundColor: lime300,
         foregroundColor: white,
       ),
-      bottomNavigationBar: CustomBottomNavigationBar(currentIndex: 2),
+      bottomNavigationBar: CustomBottomNavigationBarBuyer(currentIndex: 2),
     );
   }
 

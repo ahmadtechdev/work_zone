@@ -3,7 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:work_zone/pages/buyer/buyer_home.dart';
-import 'package:work_zone/pages/seller/seller_dashboard.dart';
+import 'package:work_zone/pages/seller/seller_home.dart';
 import 'package:work_zone/pages/signup.dart';// Import the API service
 import 'package:work_zone/widgets/colors.dart';
 import '../service/api_service.dart';

@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:work_zone/pages/seller/seller_create_gig.dart';
 import 'package:work_zone/pages/signin.dart';
 import 'package:work_zone/pages/starter1.dart';
 import 'package:work_zone/pages/welcome.dart';
 import 'package:work_zone/widgets/colors.dart';
 
 import 'pages/buyer/buyer_home.dart';
+import 'pages/seller/seller_manage_gig.dart';
+import 'pages/seller/seller_my_orders.dart';
+import 'pages/seller/seller_order.dart';
+import 'pages/seller/seller_profile_setting.dart';
+import 'pages/seller/seller_projects.dart';
+import 'pages/seller/seller_subscription.dart';
 
 void main() {
   runApp(const MyApp());
