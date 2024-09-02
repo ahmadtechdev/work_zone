@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:work_zone/pages/seller/seller_create_gig.dart';
+import 'package:work_zone/pages/seller/seller_edit_gig.dart';
 import 'package:work_zone/widgets/colors.dart';
 import '../../service/api_service.dart';
 import '../../widgets/bottom_navigation_bar_seller.dart';
@@ -139,6 +140,7 @@ class _SellerManageGigState extends State<SellerManageGig> {
                     ElevatedButton(
                       onPressed: () {
                         // Handle edit gig action
+                        Get.to(()=> SellerEditGig(gigId: gig['id']));
                       },
                       child: Text('Edit Gig'),
                       style: ElevatedButton.styleFrom(

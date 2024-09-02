@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:work_zone/pages/seller/seller_delete_account.dart';
+import 'package:work_zone/pages/seller/seller_my_account.dart';
 import 'package:work_zone/widgets/bottom_navigation_bar_seller.dart';
 
 import '../../service/api_service.dart';
@@ -43,7 +44,7 @@ class _SellerProfileState extends State<SellerProfile> {
                 }),
                 _buildListItem(
                     Icons.account_balance_wallet, 'My Account', Colors.orange,() {
-                  // Get.to(()=> BuyerMyAccount());
+                  Get.to(()=> SellerMyAccount());
                 }),
                 _buildListItem(Icons.swap_horiz, 'Transaction', Colors.red,() {}),
                 _buildListItem(Icons.favorite, 'Favorite', Colors.purple,() {}),

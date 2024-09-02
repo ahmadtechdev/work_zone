@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:work_zone/pages/seller/seller_my_account.dart';
 import 'package:work_zone/widgets/colors.dart';
 import '../../service/api_service.dart';
 
@@ -27,7 +29,6 @@ class _SellerWithdrawRequestState extends State<SellerWithdrawRequest> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               SizedBox(height: 24),
               Text(
                 'Withdraw Your Balance Now',
@@ -37,10 +38,33 @@ class _SellerWithdrawRequestState extends State<SellerWithdrawRequest> {
               _buildTransferDetails(),
               SizedBox(height: 24),
               _buildForm(),
-
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildTransferDetails() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Transfer Details',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Please ensure that all the necessary details are filled in correctly before proceeding with the withdrawal. Double-check your account name, account number, and the amount to avoid any delays in processing your request.',
+            style: TextStyle(fontSize: 14),
+          ),
+        ],
       ),
     );
   }
@@ -85,20 +109,31 @@ class _SellerWithdrawRequestState extends State<SellerWithdrawRequest> {
         labelText: label,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       ),
-      items: <String>['Select Bank or Wallet', 'Bank A', 'Bank B', 'Wallet X', 'Wallet Y']
-          .map<DropdownMenuItem<String>>((String value) {
-        return DropdownMenuItem<String>(
-          value: value,
-          child: Text(value),
-        );
-      }).toList(),
+      items: [
+        DropdownMenuItem(value: '', child: Text('Select Bank or Wallet', style: TextStyle(color: Colors.grey))),
+        DropdownMenuItem(value: 'HBL', child: Text('Habib Bank Limited (HBL)')),
+        DropdownMenuItem(value: 'UBL', child: Text('United Bank Limited (UBL)')),
+        DropdownMenuItem(value: 'MCB', child: Text('Muslim Commercial Bank (MCB)')),
+        DropdownMenuItem(value: 'Allied Bank', child: Text('Allied Bank')),
+        DropdownMenuItem(value: 'Bank Alfalah', child: Text('Bank Alfalah')),
+        DropdownMenuItem(value: 'Standard Chartered', child: Text('Standard Chartered')),
+        DropdownMenuItem(value: 'Meezan Bank', child: Text('Meezan Bank')),
+        DropdownMenuItem(value: 'Askari Bank', child: Text('Askari Bank')),
+        DropdownMenuItem(value: 'National Bank of Pakistan', child: Text('National Bank of Pakistan (NBP)')),
+        DropdownMenuItem(value: 'Faysal Bank', child: Text('Faysal Bank')),
+        DropdownMenuItem(value: 'Easypaisa', child: Text('Easypaisa')),
+        DropdownMenuItem(value: 'JazzCash', child: Text('JazzCash')),
+        DropdownMenuItem(value: 'UPaisa', child: Text('UPaisa')),
+        DropdownMenuItem(value: 'SadaPay', child: Text('SadaPay')),
+        DropdownMenuItem(value: 'NayaPay', child: Text('NayaPay')),
+      ],
       onChanged: (String? newValue) {
         setState(() {
           controller.text = newValue!;
         });
       },
       validator: (value) {
-        if (value == null || value == 'Select Bank or Wallet') {
+        if (value == null || value.isEmpty || value == '') {
           return 'Please select a bank or wallet';
         }
         return null;
@@ -122,45 +157,51 @@ class _SellerWithdrawRequestState extends State<SellerWithdrawRequest> {
     );
   }
 
-  Widget _buildTransferDetails() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Transfer Details',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 16),
-          Text(
-            'Please ensure that all the necessary details are filled in correctly before proceeding with the withdrawal. Double-check your account name, account number, and the amount to avoid any delays in processing your request.',
-            style: TextStyle(fontSize: 14),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _submitWithdrawRequest() async {
     if (_formKey.currentState!.validate()) {
-      // Here you would typically call your API service to submit the withdrawal request
-      // For now, we'll just show a success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Withdrawal request submitted successfully'),
-          backgroundColor: lime300,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
+      // Call your API service to submit the withdrawal request
+      try {
+        final response = await _apiService.storeWithdraw(
+          _bankWalletController.text,
+          _accountNameController.text,
+          _accountNoController.text,
+          double.parse(_amountController.text),
+        );
+        print(response);
+        print(response['message']);
+
+        if (response['status'] == 'success') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Withdrawal request submitted successfully'),
+              backgroundColor: lime300,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
+              ),
+              margin: const EdgeInsets.only(bottom: 12, right: 20, left: 20),
+            ),
+          );
+          Get.to(()=>SellerMyAccount());
+        } else {
+
+          throw Exception(response['message']);
+        }
+      } catch (e) {
+        print(e.toString());
+        // print(response);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(22),
+            ),
+            margin: const EdgeInsets.only(bottom: 12, right: 20, left: 20),
           ),
-          margin: const EdgeInsets.only(bottom: 12, right: 20, left: 20),
-        ),
-      );
+        );
+      }
     }
   }
 

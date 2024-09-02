@@ -7,8 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as path;
 
 class ApiService {
-  final String baseUrl = "http://10.10.0.79:500/api/";
-  final String baseUrlImg = "http://10.10.0.79:500/";
+  final String baseUrl = "http://10.10.0.151:500/api/";
+  final String baseUrlImg = "http://10.10.0.151:500/";
 
   Future<Map<String, dynamic>> post(String endpoint, Map<String, dynamic> body) async {
     final prefs = await SharedPreferences.getInstance();
@@ -369,4 +369,116 @@ class ApiService {
       throw Exception('Failed to delete job: ${response.body}');
     }
   }
+  Future<Map<String, dynamic>> getGig(int gigId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+
+    final url = Uri.parse('${baseUrl}get-gig/$gigId');
+    final response = await http.get(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load job');
+    }
+  }
+
+  Future<Map<String, dynamic>> gigUpdate(int gigId, Map<String, dynamic> gigData) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+
+    var uri = Uri.parse('${baseUrl}update-gig/$gigId');
+    var request = http.MultipartRequest('POST', uri);
+    print(request);
+
+    // Add text fields
+    gigData.forEach((key, value) {
+      request.fields[key] = value.toString();
+    });
+
+    // Add image file if present
+    if (gigData['gig_img'] != null && gigData['gig_img'] is File) {
+      var file = await http.MultipartFile.fromPath(
+        'gig_img',
+        gigData['gig_img'].path,
+        filename: path.basename(gigData['gig_img'].path),
+      );
+      request.files.add(file);
+    }
+
+    // Add authorization header
+    request.headers['Authorization'] = 'Bearer $token';
+
+    // Send the request
+    var streamedResponse = await request.send();
+    var response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to update gig: ${response.body}');
+    }
+  }
+
+  Future<Map<String, dynamic>> getSellerAccount() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+
+    final url = Uri.parse('${baseUrl}my-account');
+    final response = await http.get(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load job');
+    }
+  }
+
+  Future<Map<String, dynamic>> storeWithdraw(
+      String bankName,
+      String accountName,
+      String accountNumber,
+      double amount,
+      ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+
+    final url = Uri.parse('${baseUrl}store-withdraw');
+    final response = await http.post(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+      body: jsonEncode({
+        'bank_name': bankName,
+        'account_name': accountName,
+        'account_no': accountNumber,
+        'amount': amount.toInt(),
+      }),
+    );
+
+    print(response);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to process withdrawal');
+    }
+  }
+
+
+
 }
