@@ -7,8 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as path;
 
 class ApiService {
-  final String baseUrl = "http://10.10.0.151:500/api/";
-  final String baseUrlImg = "http://10.10.0.151:500/";
+  final String baseUrl = "http://10.10.0.164:500/api/";
+  final String baseUrlImg = "http://10.10.0.164:500/";
 
   Future<Map<String, dynamic>> post(String endpoint, Map<String, dynamic> body) async {
     final prefs = await SharedPreferences.getInstance();
@@ -476,6 +476,71 @@ class ApiService {
       return jsonDecode(response.body);
     } else {
       throw Exception('Failed to process withdrawal');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getSellerOrders() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+
+    final url = Uri.parse('${baseUrl}seller-orders');
+    final response = await http.get(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final responseData = jsonDecode(response.body);
+      if (responseData.containsKey('orders') && responseData['orders'] is List) {
+        return List<Map<String, dynamic>>.from(responseData['orders']);
+      } else {
+        throw Exception('Invalid data format: orders not found or not a list');
+      }
+    } else {
+      throw Exception('Failed to load seller orders');
+    }
+  }
+
+  Future<void> acceptOrder(String orderId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+
+    final url = Uri.parse(baseUrl + 'accept-order/$orderId');
+    final response = await http.post(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    if (response.statusCode == 200) {
+      print('Order accepted successfully');
+    } else {
+      throw Exception('Failed to accept order');
+    }
+  }
+
+  Future<void> declineOrder(String orderId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+
+    final url = Uri.parse(baseUrl + 'decline-order/$orderId');
+    final response = await http.post(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    if (response.statusCode == 200) {
+      print('Order declined successfully');
+    } else {
+      throw Exception('Failed to decline order');
     }
   }
 

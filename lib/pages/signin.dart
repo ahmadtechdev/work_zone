@@ -46,9 +46,12 @@ class _SignInScreenState extends State<SignInScreen> {
         'email': loginEmail,
         'password': loginPassword,
       };
+      print(body);
 
       try {
+
         final response = await apiService.post('login', body);
+
         if (response['success'] == true) {
           var userData = response['data']['user'];
           var token = response['data']['token'];

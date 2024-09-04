@@ -1,64 +1,49 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:work_zone/widgets/bottom_navigation_bar_seller.dart';
+import 'package:work_zone/widgets/colors.dart';
+import '../../service/api_service.dart';
+import 'seller_submit_order.dart';
 
 class SellerOrder extends StatefulWidget {
-  const SellerOrder({super.key});
+  const SellerOrder({Key? key}) : super(key: key);
 
   @override
   State<SellerOrder> createState() => _SellerOrderState();
 }
 
-class _SellerOrderState  extends State<SellerOrder> with SingleTickerProviderStateMixin {
+class _SellerOrderState extends State<SellerOrder> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  List<String> tabs = ['Active', 'Pending', 'Completed', 'Cancelled'];
-
-  // Sample order data - in a real app, this would come from an API or database
-  final List<OrderCard> allOrders = [
-    OrderCard(
-      orderId: 'F025E15',
-      orderDate: DateTime(2024, 8, 17),
-      duration: Duration(days: 3),
-      seller: 'Shaidul Islam',
-      title: 'Mobile UI UX design or app UI UX design',
-      amount: 5.00,
-      status: 'Active',
-    ),
-    OrderCard(
-      orderId: 'F025E16',
-      orderDate: DateTime(2024, 8, 17),
-      duration: Duration(days: 2),
-      seller: 'John Doe',
-      title: 'Web Development Project',
-      amount: 10.00,
-      status: 'Pending',
-    ),
-
-    OrderCard(
-      orderId: 'F025E18',
-      orderDate: DateTime(2024, 8, 17),
-      duration: Duration(days: 4),
-      seller: 'Bob Johnson',
-      title: 'Content Writing',
-      amount: 7.00,
-      status: 'Cancelled',
-    ),
-    OrderCard(
-      orderId: 'F025E18',
-      orderDate: DateTime(2024, 8, 17),
-      duration: Duration(days: 4),
-      seller: 'Bob Johnson',
-      title: 'Content Writing',
-      amount: 7.00,
-      status: 'Active',
-    ),
-  ];
+  final List<String> tabs = ['Accepted', 'Pending', 'Completed', 'Declined'];
+  List<Map<String, dynamic>> allOrders = [];
+  bool isLoading = true;
+  final ApiService apiService = ApiService();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: tabs.length, vsync: this);
+    fetchOrders();
+  }
+
+  Future<void> fetchOrders() async {
+    try {
+      final orders = await apiService.getSellerOrders();
+      if (mounted) {
+        setState(() {
+          allOrders = orders;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error fetching orders: $e');
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -68,7 +53,20 @@ class _SellerOrderState  extends State<SellerOrder> with SingleTickerProviderSta
   }
 
   List<OrderCard> getOrdersByStatus(String status) {
-    return allOrders.where((order) => order.status == status).toList();
+    return allOrders
+        .where((order) => order['status'] == status)
+        .map((order) => OrderCard(
+      orderId: order['id'].toString(),
+      orderDate: DateTime.parse(order['created_at']),
+      duration: Duration(days: int.parse(order['delivery_time'].split(' ')[0])),
+      buyer: order['buyer_name'],
+      title: order['gig_title'],
+      amount: double.parse(order['price']),
+      status: order['status'],
+      image: order['gig_img'] ?? "https://cdn-icons-png.flaticon.com/128/13434/13434972.png",
+      onOrderStatusChanged: fetchOrders,
+    ))
+        .toList();
   }
 
   @override
@@ -81,15 +79,17 @@ class _SellerOrderState  extends State<SellerOrder> with SingleTickerProviderSta
         ),
         title: Text('Orders'),
       ),
-      body: Column(
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : Column(
         children: [
           TabBar(
             controller: _tabController,
             tabs: tabs.map((String tab) => Tab(text: tab)).toList(),
             isScrollable: true,
-            labelColor: Colors.green,
+            labelColor: lime300,
             unselectedLabelColor: Colors.grey,
-            indicatorColor: Colors.green,
+            indicatorColor: lime300,
           ),
           Expanded(
             child: TabBarView(
@@ -113,20 +113,24 @@ class OrderCard extends StatefulWidget {
   final String orderId;
   final DateTime orderDate;
   final Duration duration;
-  final String seller;
+  final String buyer;
   final String title;
   final double amount;
   final String status;
+  final String image;
+  final VoidCallback onOrderStatusChanged;
 
   const OrderCard({
     Key? key,
     required this.orderId,
     required this.orderDate,
     required this.duration,
-    required this.seller,
+    required this.buyer,
     required this.title,
     required this.amount,
     required this.status,
+    required this.image,
+    required this.onOrderStatusChanged,
   }) : super(key: key);
 
   @override
@@ -136,6 +140,7 @@ class OrderCard extends StatefulWidget {
 class _OrderCardState extends State<OrderCard> {
   late Timer _timer;
   late int _remainingSeconds;
+  final ApiService apiService = ApiService();
 
   @override
   void initState() {
@@ -158,13 +163,15 @@ class _OrderCardState extends State<OrderCard> {
 
   void startTimer() {
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-      setState(() {
-        if (_remainingSeconds > 0) {
-          _remainingSeconds--;
-        } else {
-          _timer.cancel();
-        }
-      });
+      if (mounted) {
+        setState(() {
+          if (_remainingSeconds > 0) {
+            _remainingSeconds--;
+          } else {
+            _timer.cancel();
+          }
+        });
+      }
     });
   }
 
@@ -210,16 +217,78 @@ class _OrderCardState extends State<OrderCard> {
               ],
             ),
             SizedBox(height: 8),
-            Text('Seller: ${widget.seller} | ${widget.orderDate.toString().split(' ')[0]}'),
+            Text('Buyer: ${widget.buyer} | ${widget.orderDate.toString().split(' ')[0]}'),
             SizedBox(height: 8),
-            _buildOrderDetail('Title', widget.title),
-            _buildOrderDetail('Duration', '${widget.duration.inDays} Days'),
-            _buildOrderDetail('Amount', '\$ ${widget.amount.toStringAsFixed(2)}'),
-            _buildOrderDetail('Status', widget.status),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildOrderDetail('Gig Title', widget.title),
+                      _buildOrderDetail('Duration', '${widget.duration.inDays} Days'),
+                      _buildOrderDetail('Amount', 'R.s ${widget.amount.toStringAsFixed(2)}'),
+                      _buildOrderDetail('Status', widget.status),
+                    ],
+                  ),
+                ),
+                ClipRRect(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
+                  child: Image.network(
+                    widget.image,
+                    height: 90,
+                    width: 100,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 18),
+            if (widget.status == 'Accepted')
+              Center(
+                child: ElevatedButton(
+                  onPressed: () => Get.to(() => SellerSubmitOrder()),
+                  style: ElevatedButton.styleFrom(backgroundColor: blue300),
+                  child: Text('Submit Order', style: TextStyle(color: Colors.white)),
+                ),
+              ),
+            if (widget.status == 'Pending')
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  ElevatedButton(
+                    onPressed: () => _handleOrderAction(true),
+                    style: ElevatedButton.styleFrom(backgroundColor: lime300),
+                    child: Text('Accept Order', style: TextStyle(color: Colors.white)),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => _handleOrderAction(false),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    child: Text('Decline Order', style: TextStyle(color: Colors.white)),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _handleOrderAction(bool isAccepting) async {
+    try {
+      if (isAccepting) {
+        await apiService.acceptOrder(widget.orderId);
+      } else {
+        await apiService.declineOrder(widget.orderId);
+      }
+      widget.onOrderStatusChanged();
+    } catch (e) {
+      print('Error ${isAccepting ? 'accepting' : 'declining'} order: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to ${isAccepting ? 'accept' : 'decline'} order')),
+      );
+    }
   }
 
   Widget _buildOrderDetail(String label, String value) {

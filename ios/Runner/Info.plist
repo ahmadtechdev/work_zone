@@ -49,5 +49,12 @@
     <string>This app requires access to the photo library to upload images for job posts.</string>
     <key>NSCameraUsageDescription</key>
     <string>This app requires access to the camera to take photos for job posts.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>We need access to your photo library to upload files.</string>
+    <key>NSDocumentDirectoryUsageDescription</key>
+    <string>We need access to your documents to upload files.</string>
+    <key>NSFileTypeUsageDescription</key>
+    <string>We need access to your files for file uploads.</string>
+
 </dict>
 </plist>
