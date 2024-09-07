@@ -71,7 +71,7 @@ class _SellerProfileSettingsState extends State<SellerProfileSettings> {
                   child: ElevatedButton(
                     onPressed: (){},
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: lime300,
+                      backgroundColor: primary,
                       foregroundColor: white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),

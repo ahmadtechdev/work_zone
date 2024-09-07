@@ -7,29 +7,89 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as path;
 
 class ApiService {
-  final String baseUrl = "http://10.10.0.164:500/api/";
-  final String baseUrlImg = "http://10.10.0.164:500/";
+  final String baseUrl = "http://10.10.0.72:500/api/";
+  final String baseUrlImg = "http://10.10.0.72:500/";
+  // final String baseUrl = "https://miftag.com/api/";
+  // final String baseUrlImg = "https://miftag.com/";
+
 
   Future<Map<String, dynamic>> post(String endpoint, Map<String, dynamic> body) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token') ?? '';
 
     final url = Uri.parse(baseUrl + endpoint);
-    final response = await http.post(
-      url,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode(body),
-    );
+    print(url);
+    print(body);
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load data');
+    try {
+
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode(body),
+      );
+
+      print(response);
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        // Extract error message from response body if possible
+        String errorMessage = 'Failed to load data';
+        try {
+          final errorResponse = jsonDecode(response.body);
+          errorMessage = errorResponse['message'] ?? errorMessage;
+        } catch (e) {
+          // Handle JSON parsing error
+        }
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      // Handle network errors or other unexpected issues
+      throw Exception('Network error or unexpected issue: $e');
     }
   }
+
+  Future<Map<String, dynamic>> get(String endpoint) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+
+    final url = Uri.parse(baseUrl + endpoint);
+    print(url);
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      print(response);
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        // Extract error message from response body if possible
+        String errorMessage = 'Failed to load data';
+        try {
+          final errorResponse = jsonDecode(response.body);
+          errorMessage = errorResponse['message'] ?? errorMessage;
+        } catch (e) {
+          // Handle JSON parsing error
+        }
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      // Handle network errors or other unexpected issues
+      throw Exception('Network error or unexpected issue: $e');
+    }
+  }
+
 
   Future<Map<String, dynamic>> deleteAccount() async {
     final prefs = await SharedPreferences.getInstance();

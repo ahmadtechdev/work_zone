@@ -26,7 +26,8 @@ class _BuyerJobEditPageState extends State<BuyerJobEditPage> {
   String _selectedJobType = "Fixed Price";
   String _selectedCategory = "web-development";
   late QuillController _descriptionController = QuillController.basic();
-  final budgetController = TextEditingController();
+  final minBudgetController = TextEditingController();
+  final maxBudgetController = TextEditingController();
   List<File> _selectedImages = [];
   String? _currentGigImg;
   final _formKey = GlobalKey<FormState>();
@@ -100,7 +101,8 @@ class _BuyerJobEditPageState extends State<BuyerJobEditPage> {
           selection: TextSelection.collapsed(offset: 0),
         );
 
-        budgetController.text = jobData['job']['budget'].toString();
+        minBudgetController.text = jobData['job']['budget'].toString();
+        maxBudgetController.text = jobData['job']['maxbudget'].toString();
         _currentGigImg = jobData['job']['gig_img'];
         _isLoading = false;
       });
@@ -228,20 +230,35 @@ class _BuyerJobEditPageState extends State<BuyerJobEditPage> {
               ),
               SizedBox(height: 16),
               TextFormField(
-                controller: budgetController,
+                controller: minBudgetController,
                 decoration: InputDecoration(
-                  labelText: 'Budget',
+                  labelText: 'Min Budget',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value!.isEmpty) {
-                    return "Please enter Budget";
+                    return "Please enter Min Budget";
                   }
                   return null;
                 },
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: maxBudgetController,
+                decoration: InputDecoration(
+                  labelText: 'Max Budget',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value!.isEmpty) {
+                    return "Please enter Max Budget";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
               Text('Upload Images', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               SizedBox(height: 16),
               OutlinedButton(
@@ -271,7 +288,7 @@ class _BuyerJobEditPageState extends State<BuyerJobEditPage> {
               ElevatedButton(
                 onPressed: _updateJob,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: lime300,
+                  backgroundColor: primary,
                   foregroundColor: white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
@@ -362,7 +379,8 @@ class _BuyerJobEditPageState extends State<BuyerJobEditPage> {
         request.fields['jobDuration'] = _selectedJobDuration;
         request.fields['jobType'] = _selectedJobType;
         request.fields['description'] = htmlContent;
-        request.fields['budget'] = budgetController.text;
+        request.fields['budget'] = minBudgetController.text;
+        request.fields['maxbudget'] = maxBudgetController.text;
 
         // Add image file
         if (_selectedImages.isNotEmpty) {
@@ -393,6 +411,7 @@ class _BuyerJobEditPageState extends State<BuyerJobEditPage> {
             );
             Navigator.of(context).pop();
           } else {
+            print(result['message']);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Failed to update job: ${result['message']}')),
             );
@@ -413,7 +432,8 @@ class _BuyerJobEditPageState extends State<BuyerJobEditPage> {
   void dispose() {
     jobTitleController.dispose();
     _descriptionController.dispose();
-    budgetController.dispose();
+    minBudgetController.dispose();
+    maxBudgetController.dispose();
     super.dispose();
   }
 }

@@ -1,38 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:work_zone/pages/seller/seller_create_gig.dart';
-import 'package:work_zone/pages/signin.dart';
-import 'package:work_zone/pages/starter1.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:work_zone/pages/welcome.dart';
 import 'package:work_zone/widgets/colors.dart';
 
 import 'pages/buyer/buyer_home.dart';
-import 'pages/seller/seller_manage_gig.dart';
-import 'pages/seller/seller_my_orders.dart';
-import 'pages/seller/seller_order.dart';
-import 'pages/seller/seller_profile_setting.dart';
-import 'pages/seller/seller_projects.dart';
-import 'pages/seller/seller_subscription.dart';
+import 'pages/seller/seller_home.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('token');
+
+  Widget initialScreen;
+
+  if (token != null && token.isNotEmpty) {
+    // Check user role (assuming you saved it in SharedPreferences as well)
+    String role = prefs.getString('role') ?? '';
+    if (role == 'seller') {
+      initialScreen = SellerDashboard();
+    } else if (role == 'buyer') {
+      initialScreen = BuyerHome();
+    } else {
+      initialScreen = WelcomeScreen(); // Fallback in case of an undefined role
+    }
+  } else {
+    initialScreen = WelcomeScreen();
+  }
+
+  runApp(MyApp(initialScreen: initialScreen));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final Widget initialScreen;
+  const MyApp({super.key, required this.initialScreen});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-
       title: 'WorkZone',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: lime300),
+        colorScheme: ColorScheme.fromSeed(seedColor: primary),
         useMaterial3: true,
       ),
-      home: WelcomeScreen(),
+      home: initialScreen,
     );
   }
 }
-

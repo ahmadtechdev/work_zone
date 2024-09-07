@@ -19,9 +19,9 @@ class _BuyerHomeState extends State<BuyerHome> {
     final userName = userData != null
         ? (userData['fname'] ?? '') + ' ' + (userData['lname'] ?? '')
         : 'Unknown User';
-    final userAddress = userData != null
-        ? userData['address'] ?? 'No Address Provided'
-        : 'No Address Provided';
+    // final userAddress = userData != null
+    //     ? userData['address'] ?? 'No Address Provided'
+    //     : 'No Address Provided';
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -154,7 +154,7 @@ class CategorySection extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 30,
-                      backgroundColor: lime300,
+                      backgroundColor: primary,
                       child: Icon(categories[index]['icon'], color: Colors.white),
                     ),
                     SizedBox(height: 5),

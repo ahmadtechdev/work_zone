@@ -1,3 +1,4 @@
+import 'dart:convert'; // For JSON encoding/decoding
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:work_zone/pages/seller/seller_create_gig.dart';
@@ -5,6 +6,7 @@ import 'package:work_zone/pages/seller/seller_edit_gig.dart';
 import 'package:work_zone/widgets/colors.dart';
 import '../../service/api_service.dart';
 import '../../widgets/bottom_navigation_bar_seller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SellerManageGig extends StatefulWidget {
   @override
@@ -24,21 +26,35 @@ class _SellerManageGigState extends State<SellerManageGig> {
   }
 
   Future<void> _loadGigs() async {
-    try {
-      final fetchedGigs = await _apiService.getGigsForUser();
-      setState(() {
-        gigs = fetchedGigs;
+    final prefs = await SharedPreferences.getInstance();
+    final cachedGigs = prefs.getString('cachedGigs');
 
+    if (cachedGigs != null) {
+      // Use cached gigs data
+      setState(() {
+        gigs = List<Map<String, dynamic>>.from(json.decode(cachedGigs));
         isLoading = false;
         errorMessage = null;
       });
+    } else {
+      // Fetch gigs from API
+      try {
+        final fetchedGigs = await _apiService.getGigsForUser();
+        setState(() {
+          gigs = fetchedGigs;
+          isLoading = false;
+          errorMessage = null;
+        });
 
-    } catch (e) {
-      print('Error loading gigs: $e');
-      setState(() {
-        isLoading = false;
-        errorMessage = 'Failed to load gigs. Please try again later.';
-      });
+        // Cache gigs data
+        prefs.setString('cachedGigs', json.encode(fetchedGigs));
+      } catch (e) {
+        print('Error loading gigs: $e');
+        setState(() {
+          isLoading = false;
+          errorMessage = 'Failed to load gigs. Please try again later.';
+        });
+      }
     }
   }
 
@@ -55,7 +71,7 @@ class _SellerManageGigState extends State<SellerManageGig> {
             },
             child: Text('Create a new Gig'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: lime300,
+              backgroundColor: primary,
               foregroundColor: white,
             ),
           ),
@@ -82,6 +98,7 @@ class _SellerManageGigState extends State<SellerManageGig> {
     final profileImageUrl = gig['user_profile_pic'] != null
         ? '${_apiService.baseUrlImg}${gig['user_profile_pic']}'
         : 'https://cdn-icons-png.flaticon.com/128/13434/13434972.png';
+
     return Card(
       margin: EdgeInsets.all(16),
       child: Column(
@@ -94,6 +111,10 @@ class _SellerManageGigState extends State<SellerManageGig> {
               height: 200,
               width: double.infinity,
               fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: Colors.grey[200],
+                child: Icon(Icons.image, color: Colors.grey[400]),
+              ),
             ),
           ),
           Padding(
@@ -121,10 +142,9 @@ class _SellerManageGigState extends State<SellerManageGig> {
                 Row(
                   children: [
                     CircleAvatar(
-                      backgroundImage: gig['user_profile_pic'] != null
-                          ? NetworkImage(_apiService.baseUrlImg + gig['user_profile_pic'])
-                          : AssetImage('lib/assets/img/others/1.png') as ImageProvider,
+                      backgroundImage: NetworkImage(profileImageUrl),
                       radius: 12,
+                      backgroundColor: Colors.grey[200],
                     ),
                     SizedBox(width: 8),
                     Text(
@@ -140,7 +160,7 @@ class _SellerManageGigState extends State<SellerManageGig> {
                     ElevatedButton(
                       onPressed: () {
                         // Handle edit gig action
-                        Get.to(()=> SellerEditGig(gigId: gig['id']));
+                        Get.to(() => SellerEditGig(gigId: gig['id']));
                       },
                       child: Text('Edit Gig'),
                       style: ElevatedButton.styleFrom(
@@ -195,7 +215,7 @@ class _SellerManageGigState extends State<SellerManageGig> {
               child: Text('Delete'),
               onPressed: () {
                 Navigator.of(context).pop();
-                _deleteJob(gigId);
+                _deleteGig(gigId);
               },
             ),
           ],
@@ -204,7 +224,7 @@ class _SellerManageGigState extends State<SellerManageGig> {
     );
   }
 
-  Future<void> _deleteJob(int gigId) async {
+  Future<void> _deleteGig(int gigId) async {
     try {
       await _apiService.deleteGig(gigId);
       ScaffoldMessenger.of(context).showSnackBar(

@@ -89,7 +89,7 @@ class _SellerWithdrawRequestState extends State<SellerWithdrawRequest> {
               onPressed: _submitWithdrawRequest,
               child: Text('Submit Withdraw Request'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: lime300,
+                backgroundColor: primary,
                 foregroundColor: white,
                 padding: EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
@@ -174,7 +174,7 @@ class _SellerWithdrawRequestState extends State<SellerWithdrawRequest> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Withdrawal request submitted successfully'),
-              backgroundColor: lime300,
+              backgroundColor: primary,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(22),

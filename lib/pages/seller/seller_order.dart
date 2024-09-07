@@ -7,7 +7,7 @@ import '../../service/api_service.dart';
 import 'seller_submit_order.dart';
 
 class SellerOrder extends StatefulWidget {
-  const SellerOrder({Key? key}) : super(key: key);
+  const SellerOrder({super.key});
 
   @override
   State<SellerOrder> createState() => _SellerOrderState();
@@ -15,7 +15,7 @@ class SellerOrder extends StatefulWidget {
 
 class _SellerOrderState extends State<SellerOrder> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final List<String> tabs = ['Accepted', 'Pending', 'Completed', 'Declined'];
+  final List<String> tabs = ['Accepted', 'Pending', 'Delivered','Make A Revision','Completed', 'Declined'];
   List<Map<String, dynamic>> allOrders = [];
   bool isLoading = true;
   final ApiService apiService = ApiService();
@@ -74,22 +74,22 @@ class _SellerOrderState extends State<SellerOrder> with SingleTickerProviderStat
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Orders'),
+        title: const Text('Orders'),
       ),
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : Column(
         children: [
           TabBar(
             controller: _tabController,
             tabs: tabs.map((String tab) => Tab(text: tab)).toList(),
             isScrollable: true,
-            labelColor: lime300,
+            labelColor: primary,
             unselectedLabelColor: Colors.grey,
-            indicatorColor: lime300,
+            indicatorColor: primary,
           ),
           Expanded(
             child: TabBarView(
@@ -104,7 +104,7 @@ class _SellerOrderState extends State<SellerOrder> with SingleTickerProviderStat
           ),
         ],
       ),
-      bottomNavigationBar: CustomBottomNavigationBarSeller(currentIndex: 3),
+      bottomNavigationBar: const CustomBottomNavigationBarSeller(currentIndex: 3),
     );
   }
 }
@@ -121,7 +121,7 @@ class OrderCard extends StatefulWidget {
   final VoidCallback onOrderStatusChanged;
 
   const OrderCard({
-    Key? key,
+    super.key,
     required this.orderId,
     required this.orderDate,
     required this.duration,
@@ -131,7 +131,7 @@ class OrderCard extends StatefulWidget {
     required this.status,
     required this.image,
     required this.onOrderStatusChanged,
-  }) : super(key: key);
+  });
 
   @override
   _OrderCardState createState() => _OrderCardState();
@@ -162,7 +162,7 @@ class _OrderCardState extends State<OrderCard> {
   }
 
   void startTimer() {
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         setState(() {
           if (_remainingSeconds > 0) {
@@ -188,37 +188,37 @@ class _OrderCardState extends State<OrderCard> {
     List<String> timeUnits = formatTime(_remainingSeconds).split(':');
 
     return Card(
-      margin: EdgeInsets.all(8),
+      margin: const EdgeInsets.all(8),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Order ID #${widget.orderId}', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text('Order ID #${widget.orderId}', style: const TextStyle(fontWeight: FontWeight.bold)),
                 Row(
                   children: List.generate(4, (index) {
                     return Container(
-                      margin: EdgeInsets.symmetric(horizontal: 2),
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.green,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         timeUnits[index],
-                        style: TextStyle(color: Colors.white),
+                        style: const TextStyle(color: Colors.white),
                       ),
                     );
                   }),
                 ),
               ],
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text('Buyer: ${widget.buyer} | ${widget.orderDate.toString().split(' ')[0]}'),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -234,7 +234,7 @@ class _OrderCardState extends State<OrderCard> {
                   ),
                 ),
                 ClipRRect(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
                   child: Image.network(
                     widget.image,
                     height: 90,
@@ -244,28 +244,31 @@ class _OrderCardState extends State<OrderCard> {
                 ),
               ],
             ),
-            SizedBox(height: 18),
-            if (widget.status == 'Accepted')
+            const SizedBox(height: 18),
+            if (widget.status == 'Accepted' || widget.status == 'Make A Revision')
               Center(
                 child: ElevatedButton(
-                  onPressed: () => Get.to(() => SellerSubmitOrder()),
+                  onPressed: () => Get.to(() => const SellerSubmitOrder(), arguments: {
+                    "order_id" : widget.orderId,
+                  }),
                   style: ElevatedButton.styleFrom(backgroundColor: blue300),
-                  child: Text('Submit Order', style: TextStyle(color: Colors.white)),
+                  child: const Text('Submit Order', style: TextStyle(color: Colors.white)),
                 ),
               ),
+
             if (widget.status == 'Pending')
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   ElevatedButton(
                     onPressed: () => _handleOrderAction(true),
-                    style: ElevatedButton.styleFrom(backgroundColor: lime300),
-                    child: Text('Accept Order', style: TextStyle(color: Colors.white)),
+                    style: ElevatedButton.styleFrom(backgroundColor: primary),
+                    child: const Text('Accept Order', style: TextStyle(color: Colors.white)),
                   ),
                   ElevatedButton(
                     onPressed: () => _handleOrderAction(false),
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                    child: Text('Decline Order', style: TextStyle(color: Colors.white)),
+                    child: const Text('Decline Order', style: TextStyle(color: Colors.white)),
                   ),
                 ],
               ),
@@ -293,11 +296,11 @@ class _OrderCardState extends State<OrderCard> {
 
   Widget _buildOrderDetail(String label, String value) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 80, child: Text('$label :', style: TextStyle(fontWeight: FontWeight.bold))),
+          SizedBox(width: 80, child: Text('$label :', style: const TextStyle(fontWeight: FontWeight.bold))),
           Expanded(child: Text(value)),
         ],
       ),

@@ -1,232 +1,175 @@
-// import 'dart:async';
+// import 'dart:convert';
+//
 // import 'package:flutter/material.dart';
-// import 'package:work_zone/widgets/bottom_navigation_bar_seller.dart';
+// import 'package:file_picker/file_picker.dart';
+// import 'package:flutter_html/flutter_html.dart';
+// import 'package:flutter_quill/flutter_quill.dart';
+// import 'package:get/get.dart';
+// import 'package:permission_handler/permission_handler.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:vsc_quill_delta_to_html/vsc_quill_delta_to_html.dart';
 // import 'package:work_zone/widgets/colors.dart';
+// import 'package:work_zone/service/api_service.dart';
+// import 'package:flutter_animate/flutter_animate.dart';
+// import 'package:shimmer/shimmer.dart';
+// import 'package:http/http.dart' as http;
+// import 'package:path/path.dart' as path;
 //
-// import '../../service/api_service.dart';
-// // Import the API service
-//
-// class SellerOrder extends StatefulWidget {
-//   const SellerOrder({super.key});
+// class SellerSubmitOrder extends StatefulWidget {
+//   const SellerSubmitOrder({Key? key}) : super(key: key);
 //
 //   @override
-//   State<SellerOrder> createState() => _SellerOrderState();
+//   _SellerSubmitOrderState createState() => _SellerSubmitOrderState();
 // }
 //
-// class _SellerOrderState extends State<SellerOrder> with SingleTickerProviderStateMixin {
-//   late TabController _tabController;
-//   List<String> tabs = ['Active', 'Pending', 'Completed', 'Cancelled'];
-//   List<Map<String, dynamic>> allOrders = [];
+// class _SellerSubmitOrderState extends State<SellerSubmitOrder> {
+//   final ApiService _apiService = ApiService();
+//   final TextEditingController _commentsController = TextEditingController();
+//
+//   String? _fileName;
+//   String? _filePath;
+//   String orderId = Get.arguments['order_id'].toString();
+//   Map<String, dynamic> orderData = {};
 //   bool isLoading = true;
 //
 //   @override
 //   void initState() {
 //     super.initState();
-//     _tabController = TabController(length: tabs.length, vsync: this);
-//     fetchOrders();
+//     _fetchOrderData();
 //   }
 //
-//   Future<void> fetchOrders() async {
+//   Future<void> _fetchOrderData() async {
 //     try {
-//       final apiService = ApiService();
-//       final orders = await apiService.getSellerOrders();
+//       final data = await _apiService.get('seller-order-info/$orderId');
 //       setState(() {
-//         allOrders = orders;
+//         orderData = data;
 //         isLoading = false;
 //       });
 //     } catch (e) {
-//       print('Error fetching orders: $e');
 //       setState(() {
 //         isLoading = false;
 //       });
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         SnackBar(content: Text('Error loading data: $e')),
+//       );
+//     }
+//   }
+//
+//   Future<bool> _requestStoragePermission() async {
+//     final permissionStatus = await Permission.storage.status;
+//     if (permissionStatus.isDenied) {
+//       // Request permission
+//       final result = await Permission.storage.request();
+//       if (result.isDenied) {
+//         // If still denied after request, open app settings
+//         await openAppSettings();
+//         return false;
+//       }
+//       return result.isGranted;
+//     } else if (permissionStatus.isPermanentlyDenied) {
+//       // If permanently denied, open app settings
+//       await openAppSettings();
+//       return false;
+//     }
+//     return permissionStatus.isGranted;
+//   }
+//
+//   Future<void> _pickFile() async {
+//     bool hasPermission = await _requestStoragePermission();
+//     if (!hasPermission) {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         const SnackBar(content: Text('Storage permission is required to pick a file')),
+//       );
+//       return;
+//     }
+//
+//     try {
+//       FilePickerResult? result = await FilePicker.platform.pickFiles();
+//       if (result != null) {
+//         setState(() {
+//           _fileName = result.files.single.name;
+//           _filePath = result.files.single.path;
+//         });
+//       }
+//     } catch (e) {
+//       print('Error picking file: $e');
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         SnackBar(content: Text('Error picking file: $e')),
+//       );
 //     }
 //   }
 //
 //   @override
 //   void dispose() {
-//     _tabController.dispose();
+//     _commentsController.dispose();
 //     super.dispose();
 //   }
 //
-//   List<OrderCard> getOrdersByStatus(String status) {
-//     return allOrders
-//         .where((order) => order['status'] == status)
-//         .map((order) => OrderCard(
-//       orderId: order['id'].toString(),
-//       orderDate: DateTime.parse(order['created_at']),
-//       duration: Duration(days: int.parse(order['delivery_time'].split(' ')[0])),
-//       seller: 'Seller Name', // You might need to fetch this from user data
-//       title: order['description'],
-//       amount: double.parse(order['price']),
-//       status: order['status'],
-//     ))
-//         .toList();
-//   }
+//   // ... (rest of the code remains the same)
 //
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         leading: IconButton(
-//           icon: Icon(Icons.arrow_back),
-//           onPressed: () => Navigator.pop(context),
-//         ),
-//         title: Text('Orders'),
-//       ),
-//       body: isLoading
-//           ? Center(child: CircularProgressIndicator())
-//           : Column(
-//         children: [
-//           TabBar(
-//             controller: _tabController,
-//             tabs: tabs.map((String tab) => Tab(text: tab)).toList(),
-//             isScrollable: true,
-//             labelColor: lime300,
-//             unselectedLabelColor: Colors.grey,
-//             indicatorColor: lime300,
-//           ),
-//           Expanded(
-//             child: TabBarView(
-//               controller: _tabController,
-//               children: tabs.map((String tab) {
-//                 List<OrderCard> filteredOrders = getOrdersByStatus(tab);
-//                 return filteredOrders.isEmpty
-//                     ? Center(child: Text('No $tab orders'))
-//                     : ListView(children: filteredOrders);
-//               }).toList(),
-//             ),
-//           ),
-//         ],
-//       ),
-//       bottomNavigationBar: CustomBottomNavigationBarSeller(currentIndex: 3),
-//     );
-//   }
-// }
+//   Future<void> _submitWork() async {
+//     if (_filePath == null) {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         const SnackBar(content: Text('Please select a file to upload')),
+//       );
+//       return;
+//     }
 //
+//     bool hasPermission = await _requestStoragePermission();
+//     if (!hasPermission) {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         const SnackBar(content: Text('Storage permission is required to upload the file')),
+//       );
+//       return;
+//     }
 //
-// class OrderCard extends StatefulWidget {
-//   final String orderId;
-//   final DateTime orderDate;
-//   final Duration duration;
-//   final String seller;
-//   final String title;
-//   final double amount;
-//   final String status;
+//     try {
+//       var request = http.MultipartRequest(
+//         'POST',
+//         Uri.parse('${_apiService.baseUrl}submit-order/$orderId'),
+//       );
 //
-//   const OrderCard({
-//     Key? key,
-//     required this.orderId,
-//     required this.orderDate,
-//     required this.duration,
-//     required this.seller,
-//     required this.title,
-//     required this.amount,
-//     required this.status,
-//   }) : super(key: key);
+//       // Add file
+//       var file = await http.MultipartFile.fromPath(
+//         'work_file',
+//         _filePath!,
+//         filename: path.basename(_filePath!),
+//       );
+//       request.files.add(file);
 //
-//   @override
-//   _OrderCardState createState() => _OrderCardState();
-// }
+//       // Add comment
+//       request.fields['quick_response'] = _commentsController.text;
 //
-// class _OrderCardState extends State<OrderCard> {
-//   late Timer _timer;
-//   late int _remainingSeconds;
+//       // Add authorization header
+//       var prefs = await SharedPreferences.getInstance();
+//       var token = prefs.getString('token') ?? '';
+//       request.headers['Authorization'] = 'Bearer $token';
 //
-//   @override
-//   void initState() {
-//     super.initState();
-//     _calculateRemainingTime();
-//     startTimer();
-//   }
+//       // Send the request
+//       var streamedResponse = await request.send();
+//       var response = await http.Response.fromStream(streamedResponse);
 //
-//   @override
-//   void dispose() {
-//     _timer.cancel();
-//     super.dispose();
-//   }
-//
-//   void _calculateRemainingTime() {
-//     DateTime endTime = widget.orderDate.add(widget.duration);
-//     Duration remaining = endTime.difference(DateTime.now());
-//     _remainingSeconds = remaining.inSeconds > 0 ? remaining.inSeconds : 0;
-//   }
-//
-//   void startTimer() {
-//     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-//       setState(() {
-//         if (_remainingSeconds > 0) {
-//           _remainingSeconds--;
+//       if (response.statusCode == 200) {
+//         var result = jsonDecode(response.body);
+//         if (result['status'] == 'success') {
+//           ScaffoldMessenger.of(context).showSnackBar(
+//             const SnackBar(content: Text('Work submitted successfully')),
+//           );
+//           Get.back();
 //         } else {
-//           _timer.cancel();
+//           ScaffoldMessenger.of(context).showSnackBar(
+//             SnackBar(content: Text('Failed to submit work: ${result['message']}')),
+//           );
 //         }
-//       });
-//     });
+//       } else {
+//         throw Exception('Failed to submit work: ${response.body}');
+//       }
+//     } catch (e) {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         SnackBar(content: Text('An error occurred: $e')),
+//       );
+//     }
 //   }
 //
-//   String formatTime(int seconds) {
-//     int days = seconds ~/ 86400;
-//     int hours = (seconds % 86400) ~/ 3600;
-//     int minutes = (seconds % 3600) ~/ 60;
-//     int remainingSeconds = seconds % 60;
-//     return '$days:${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     List<String> timeUnits = formatTime(_remainingSeconds).split(':');
-//
-//     return Card(
-//       margin: EdgeInsets.all(8),
-//       child: Padding(
-//         padding: EdgeInsets.all(16),
-//         child: Column(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             Row(
-//               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//               children: [
-//                 Text('Order ID #${widget.orderId}', style: TextStyle(fontWeight: FontWeight.bold)),
-//                 Row(
-//                   children: List.generate(4, (index) {
-//                     return Container(
-//                       margin: EdgeInsets.symmetric(horizontal: 2),
-//                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-//                       decoration: BoxDecoration(
-//                         color: Colors.green,
-//                         borderRadius: BorderRadius.circular(4),
-//                       ),
-//                       child: Text(
-//                         timeUnits[index],
-//                         style: TextStyle(color: Colors.white),
-//                       ),
-//                     );
-//                   }),
-//                 ),
-//               ],
-//             ),
-//             SizedBox(height: 8),
-//             Text('Seller: ${widget.seller} | ${widget.orderDate.toString().split(' ')[0]}'),
-//             SizedBox(height: 8),
-//             _buildOrderDetail('Title', widget.title),
-//             _buildOrderDetail('Duration', '${widget.duration.inDays} Days'),
-//             _buildOrderDetail('Amount', '\$ ${widget.amount.toStringAsFixed(2)}'),
-//             _buildOrderDetail('Status', widget.status),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-//
-//   Widget _buildOrderDetail(String label, String value) {
-//     return Padding(
-//       padding: EdgeInsets.symmetric(vertical: 4),
-//       child: Row(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           SizedBox(width: 80, child: Text('$label :', style: TextStyle(fontWeight: FontWeight.bold))),
-//           Expanded(child: Text(value)),
-//         ],
-//       ),
-//     );
-//   }
+// // ... (rest of the code remains the same)
 // }

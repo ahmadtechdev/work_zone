@@ -125,7 +125,7 @@ class _SellerUpdatePasswordState extends State<SellerUpdatePassword> {
                   onPressed: _updatePassword,
                   child: Text('Update Password'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: lime300,
+                    backgroundColor: primary,
                     foregroundColor: white,
                     padding: EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(

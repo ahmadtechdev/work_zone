@@ -169,7 +169,7 @@ class _BuyerAddBalanceState extends State<BuyerAddBalance> {
             onPressed: _submitForm,
             child: Text('Add Money'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: lime300,
+              backgroundColor: primary,
               foregroundColor: white,
               padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
             ),

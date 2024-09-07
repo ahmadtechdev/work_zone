@@ -15,7 +15,7 @@ class CustomBottomNavigationBarSeller extends StatelessWidget {
   const CustomBottomNavigationBarSeller({
     super.key,
     required this.currentIndex,
-    this.selectedItemColor = lime300,
+    this.selectedItemColor = primary,
     this.unselectedItemColor = dark200,// Default color if not provided
   });
 

@@ -12,7 +12,6 @@ class CustomSnackBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return SnackBar(
       content: Text(message),
       backgroundColor: backgroundColor,
@@ -25,6 +24,16 @@ class CustomSnackBar extends StatelessWidget {
   }
 
   void show(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(this as SnackBar);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: backgroundColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+        ),
+        margin: const EdgeInsets.only(bottom: 12, right: 20, left: 20),
+      ),
+    );
   }
 }

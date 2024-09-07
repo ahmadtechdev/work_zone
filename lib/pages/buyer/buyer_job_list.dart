@@ -1,18 +1,23 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:work_zone/widgets/bottom_navigation_bar_buyer.dart';
 import 'package:work_zone/widgets/colors.dart';
 import 'package:work_zone/service/api_service.dart';
-import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Import for caching
 
 import 'buyer_create_job_post.dart';
 import 'buyer_edit_job_post.dart';
+import 'buyer_job_proposal.dart';
 
-class JobPostPage extends StatefulWidget {
+class BuyerJobList extends StatefulWidget {
+  const BuyerJobList({super.key});
+
   @override
-  _JobPostPageState createState() => _JobPostPageState();
+  _BuyerJobListState createState() => _BuyerJobListState();
 }
 
-class _JobPostPageState extends State<JobPostPage> {
+class _BuyerJobListState extends State<BuyerJobList> {
   final ApiService apiService = ApiService();
   List<dynamic> jobs = [];
   bool isLoading = true;
@@ -20,66 +25,86 @@ class _JobPostPageState extends State<JobPostPage> {
   @override
   void initState() {
     super.initState();
-    fetchJobs();
+    loadJobsFromCacheOrFetch(); // Load jobs from cache or API
+  }
+
+  Future<void> loadJobsFromCacheOrFetch() async {
+    // First, try to load jobs from cache
+    final prefs = await SharedPreferences.getInstance();
+    // await prefs.remove('cachedJobs');
+    final cachedJobs = prefs.getString('cachedJobs');
+
+    if (cachedJobs != null && cachedJobs.isNotEmpty) {
+      // If cache exists, load it
+      setState(() {
+        jobs = List<dynamic>.from(jsonDecode(cachedJobs)
+            as List<dynamic>); // Convert JSON string to list
+        isLoading = false;
+      });
+    } else {
+      // If no cache, fetch from API
+      fetchJobs();
+    }
   }
 
   Future<void> fetchJobs() async {
     try {
-      final fetchedJobs = await apiService.getJobs();
+      setState(() => isLoading = true); // Show loading indicator
+      final fetchedJobs = await apiService.getJobs(); // Use the new GET method
+
       setState(() {
         jobs = fetchedJobs;
-        isLoading = false;
       });
+
+      // Cache the jobs data
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+          'cachedJobs', jsonEncode(jobs)); // Save data as string
     } catch (e) {
-      print('Error fetching jobs: $e');
-      setState(() {
-        isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load jobs. Please try again.')),
-      );
+      _showErrorSnackbar('Failed to load jobs. Please try again.');
+    } finally {
+      setState(() => isLoading = false); // Hide loading indicator
     }
+  }
+
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   Future<void> _deleteJob(int jobId) async {
     try {
       await apiService.deleteJob(jobId);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Job deleted successfully')),
-      );
+      _showErrorSnackbar('Job deleted successfully');
       fetchJobs(); // Refresh the job list after deleting
     } catch (e) {
-      print('Error deleting job: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete job. Please try again.')),
-      );
+      _showErrorSnackbar('Failed to delete job. Please try again.');
     }
   }
 
   Future<void> _showDeleteConfirmationDialog(int jobId) async {
-    return showDialog<void>(
+    showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Confirm Delete'),
-          content: SingleChildScrollView(
+          title: const Text('Confirm Delete'),
+          content: const SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                Text('Are you sure you want to delete this job?'),
-                Text('This action cannot be undone.'),
+                Text(
+                    'Are you sure you want to delete this job? This action cannot be undone.'),
               ],
             ),
           ),
           actions: <Widget>[
             TextButton(
-              child: Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
             ),
             TextButton(
-              child: Text('Delete'),
+              child: const Text('Delete'),
               onPressed: () {
                 Navigator.of(context).pop();
                 _deleteJob(jobId);
@@ -91,30 +116,17 @@ class _JobPostPageState extends State<JobPostPage> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Job Posts'),
+        title: const Text('Job Posts'),
       ),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: fetchJobs,
-              child: jobs.isEmpty
-                  ? Center(child: Text('No jobs found'))
-                  : ListView.builder(
-                      itemCount: jobs.length,
-                      itemBuilder: (context, index) {
-                        return _buildJobCard(context, jobs[index]);
-                      },
-                    ),
-            ),
+      body: isLoading ? _buildSkeletonLoader() : _buildJobList(),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           await Navigator.push(
@@ -123,23 +135,50 @@ class _JobPostPageState extends State<JobPostPage> {
           );
           fetchJobs(); // Refresh the job list after adding a new job
         },
-        child: Icon(Icons.add),
-        backgroundColor: lime300,
+        backgroundColor: primary,
         foregroundColor: white,
+        child: const Icon(Icons.add),
       ),
-      bottomNavigationBar: CustomBottomNavigationBarBuyer(currentIndex: 2),
+      bottomNavigationBar:
+          const CustomBottomNavigationBarBuyer(currentIndex: 2),
     );
+  }
+
+  Widget _buildSkeletonLoader() {
+    return ListView.builder(
+      itemCount: 5,
+      itemBuilder: (context, index) {
+        return const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: ShimmerCard(),
+        );
+      },
+    );
+  }
+
+  Widget _buildJobList() {
+    return jobs.isEmpty
+        ? const Center(child: Text('No jobs found'))
+        : RefreshIndicator(
+            onRefresh: fetchJobs,
+            child: ListView.builder(
+              itemCount: jobs.length,
+              itemBuilder: (context, index) {
+                return _buildJobCard(context, jobs[index]);
+              },
+            ),
+          );
   }
 
   Widget _buildJobCard(BuildContext context, dynamic job) {
     final imageUrl = job['gig_img'] != null
         ? '${apiService.baseUrlImg}${job['gig_img']}'
         : 'https://cdn-icons-png.flaticon.com/128/13434/13434972.png';
-  print(imageUrl);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Card(
-        elevation: 4,
+        elevation: 8, // Shadow
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -163,29 +202,27 @@ class _JobPostPageState extends State<JobPostPage> {
                   ),
                 ),
               ),
-              SizedBox(width: 16),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       job['title'] ?? 'No Title',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       "Rs: ${job['budget'] ?? 0}",
                       style: TextStyle(
                         color: dark400.withOpacity(0.6),
                         fontSize: 14,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       'Category: ${job['category'] ?? 'No Category'}',
                       style: TextStyle(
@@ -193,7 +230,7 @@ class _JobPostPageState extends State<JobPostPage> {
                         fontSize: 14,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       'Proposals: ${job['proposals_count'] ?? '0'}',
                       style: TextStyle(
@@ -201,43 +238,16 @@ class _JobPostPageState extends State<JobPostPage> {
                         fontSize: 14,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       'Status: ${job['status'] ?? 'No Status'}',
-                      style: TextStyle(
-                        color: lime300,
+                      style: const TextStyle(
+                        color: primary,
                         fontSize: 14,
                       ),
                     ),
-                    SizedBox(height: 8),
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.edit),
-                          onPressed: () async{
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => BuyerJobEditPage(jobId: job['id']),
-                              ),
-                            );
-                            fetchJobs();
-                          },
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.delete, color: Colors.red,),
-                          onPressed: () {
-                            _showDeleteConfirmationDialog(job['id']);
-                          },
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.visibility),
-                          onPressed: () {
-                            // Handle eye action
-                          },
-                        ),
-                      ],
-                    ),
+                    const SizedBox(height: 8),
+                    _buildActionButtons(context, job),
                   ],
                 ),
               ),
@@ -248,13 +258,61 @@ class _JobPostPageState extends State<JobPostPage> {
     );
   }
 
-  String _formatDate(String? dateString) {
-    if (dateString == null) return 'No Date';
-    try {
-      final date = DateTime.parse(dateString);
-      return DateFormat('yyyy-MM-dd').format(date);
-    } catch (e) {
-      return 'Invalid Date';
-    }
+  Widget _buildActionButtons(BuildContext context, dynamic job) {
+    return Row(
+      children: [
+        IconButton(
+          icon: const Icon(Icons.edit),
+          onPressed: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BuyerJobEditPage(jobId: job['id']),
+              ),
+            );
+            fetchJobs(); // Refresh the job list after editing
+          },
+        ),
+        IconButton(
+          icon: const Icon(Icons.delete, color: Colors.red),
+          onPressed: () {
+            _showDeleteConfirmationDialog(job['id']);
+          },
+        ),
+        if (job['status'] == 'In Progress')
+          IconButton(
+            icon: const Icon(Icons.description),
+            onPressed: () {},
+          )
+        else
+          IconButton(
+            icon: const Icon(Icons.visibility),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BuyerJobProposal(jobId: job['id']),
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+}
+
+// Skeleton Card Widget
+class ShimmerCard extends StatelessWidget {
+  const ShimmerCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[300],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      height: 80, // Height for the skeleton loader
+    );
   }
 }

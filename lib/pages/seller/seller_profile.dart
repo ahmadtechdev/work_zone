@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:work_zone/pages/seller/seller_dashboard.dart';
 import 'package:work_zone/pages/seller/seller_delete_account.dart';
 import 'package:work_zone/pages/seller/seller_my_account.dart';
 import 'package:work_zone/widgets/bottom_navigation_bar_seller.dart';
@@ -40,7 +41,7 @@ class _SellerProfileState extends State<SellerProfile> {
                 }),
                 _buildListItem(
                     Icons.dashboard, 'Dashboard', Colors.blue, () {
-                  // Get.to(()=>BuyerDashboard());
+                  Get.to(()=>SellerDashboard());
                 }),
                 _buildListItem(
                     Icons.account_balance_wallet, 'My Account', Colors.orange,() {

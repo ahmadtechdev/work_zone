@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:work_zone/pages/buyer/buyer_home.dart';
 import 'package:work_zone/pages/seller/seller_home.dart';
-import 'package:work_zone/pages/signup.dart';// Import the API service
+import 'package:work_zone/pages/signup.dart';
 import 'package:work_zone/widgets/colors.dart';
 import '../service/api_service.dart';
 import '../widgets/button.dart';
@@ -22,222 +22,173 @@ class _SignInScreenState extends State<SignInScreen> {
   final loginEmailController = TextEditingController();
   final loginPasswordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
-    super.dispose();
     loginEmailController.dispose();
     loginPasswordController.dispose();
+    super.dispose();
   }
 
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    CustomSnackBar(message: 'check',backgroundColor: Colors.red,);
+  void _showSnackBar(String message, Color color) {
+    final snackBar = CustomSnackBar(message: message, backgroundColor: color);
+    snackBar.show(context);
   }
+
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
-      var loginEmail = loginEmailController.text.trim();
-      var loginPassword = loginPasswordController.text.trim();
+      setState(() {
+        _isLoading = true;
+      });
 
       var body = {
-        'email': loginEmail,
-        'password': loginPassword,
+        'email': loginEmailController.text.trim(),
+        'password': loginPasswordController.text.trim(),
       };
-      print(body);
 
       try {
-
         final response = await apiService.post('login', body);
 
         if (response['success'] == true) {
-          var userData = response['data']['user'];
-          var token = response['data']['token'];
-
-          // Save the token
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('token', token);
-
-          var role = userData['role'];
-
-          if (role == "seller") {
-            Get.to(() => SellerDashboard(), arguments: userData);
-          } else if (role == "buyer") {
-            Get.to(() => BuyerHome(), arguments: userData);
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Undefined Role!'),
-                backgroundColor: Colors.red,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                margin: const EdgeInsets.only(bottom: 12, right: 20, left: 20),
-              ),
-            );
-
-          }
+          await _handleLoginSuccess(response);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Login failed: ${response['message'] ?? "Registration failed!"}'),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(22),
-              ),
-              margin: const EdgeInsets.only(bottom: 12, right: 20, left: 20),
-            ),
-          );
-
+          _showSnackBar('Login failed: ${response['message'] ?? "Unknown error"}', Colors.red);
         }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('An error occurred: $e'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(22),
-            ),
-            margin: const EdgeInsets.only(bottom: 12, right: 20, left: 20),
-          ),
-        );
-
+        _showSnackBar('An error occurred: $e', Colors.red);
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
 
+  Future<void> _handleLoginSuccess(Map<String, dynamic> response) async {
+    var userData = response['data']['user'];
+    var token = response['data']['token'];
+    var role = userData['role'];
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('token', token);
+    await prefs.setString('role', role);
+
+
+
+    if (role == "seller") {
+      Get.offAll(() => SellerDashboard(), arguments: userData);
+    } else if (role == "buyer") {
+      Get.offAll(() => BuyerHome(), arguments: userData);
+    } else {
+      _showSnackBar('Undefined Role!', Colors.red);
+    }
+  }
+
+  InputDecoration _buildInputDecoration(String labelText) {
+    return InputDecoration(
+      fillColor: offWhite,
+      filled: true,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20.0),
+      ),
+      labelText: labelText,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         centerTitle: true,
         backgroundColor: offWhite,
         title: const Text(
-          "SignIn",
+          "Sign In",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        foregroundColor: lime300,
+        foregroundColor: primary,
       ),
-      body: Container(
-        width: MediaQuery.of(context).size.width,
-        height: MediaQuery.of(context).size.height,
-        decoration: const BoxDecoration(
-          color: offWhite,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30.0),
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                Container(
-                  alignment: Alignment.center,
-                  height: 300.0,
-                  child: SvgPicture.asset(
-                    'lib/assets/img/logo/logo-light.svg',
-                    height: MediaQuery.sizeOf(context).height / 7,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 30.0),
+        child: Column(
+          children: [
+            Container(
+              alignment: Alignment.center,
+              height: 300.0,
+              child: SvgPicture.asset(
+                'lib/assets/img/logo/logo-light.svg',
+                height: MediaQuery.sizeOf(context).height / 7,
+              ),
+            ),
+            Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  TextFormField(
+                    controller: loginEmailController,
+                    decoration: _buildInputDecoration('Email'),
+                    validator: (value) => value!.isEmpty || !value.contains('@') ? 'Enter valid Email' : null,
                   ),
-                ),
-                Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      TextFormField(
-                        controller: loginEmailController,
-                        // style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          fillColor: offWhite,
-                          filled: true,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20.0),
-                          ),
-                          labelText: 'Email',
-                        ),
-                        validator: (value) {
-                          if (value!.isEmpty || !value.contains('@')) {
-                            return "Please enter a valid Email address";
-                          }
-                          return null;
+                  const SizedBox(height: 10.0),
+                  TextFormField(
+                    controller: loginPasswordController,
+                    obscureText: _obscurePassword,
+                    decoration: _buildInputDecoration('Password').copyWith(
+                      suffixIcon: IconButton(
+                        icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
                         },
-                      ),
-                      const SizedBox(height: 10.0),
-                      TextFormField(
-                        controller: loginPasswordController,
-                        obscureText: true,
-                        // style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          fillColor: offWhite,
-                          filled: true,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20.0),
-                          ),
-                          suffixIcon: IconButton(
-                            icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
-                          ),
-
-                          labelText: 'Password',
-                        ),
-
-                        validator: (value) {
-                          if (value!.isEmpty) {
-                            return "Please enter a password";
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 30.0),
-                    ],
-                  ),
-                ),
-                RoundButton(
-                  title: "Sign in",
-                  onTap: _login,
-                ),
-                const SizedBox(height: 10.0),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    GestureDetector(onTap: (){
-                      Get.to(() =>  BuyerHome());
-                    },child: const Text("Don't have an account? ")),
-                    GestureDetector(
-                      onTap: () {
-                        Get.to(() => const SignUp());
-                      },
-                      child: Card(
-                        color: lime300,
-                        child: const Padding(
-                          padding: EdgeInsets.all(10.0),
-                          child: Text(
-                            "Create Account",
-                            style: TextStyle(
-                              color: offWhite,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
                       ),
                     ),
-                  ],
+                    validator: (value) => value!.isEmpty ? 'Enter password' : null,
+                  ),
+                  const SizedBox(height: 30.0),
+                ],
+              ),
+            ),
+            _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : RoundButton(title: "Sign in", onTap: _login),
+            const SizedBox(height: 10.0),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    Get.to(() => BuyerHome());
+                  },
+                  child: const Text("Don't have an account? "),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Get.to(() => const SignUp());
+                  },
+                  child: Card(
+                    color: primary,
+                    child: const Padding(
+                      padding: EdgeInsets.all(10.0),
+                      child: Text(
+                        "Create Account",
+                        style: TextStyle(color: offWhite, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
-          ),
+          ],
         ),
       ),
     );
   }
+
+
+
 }

@@ -79,7 +79,7 @@ class _BuyerMyAccountState extends State<BuyerMyAccount> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${userData['balance'].toString() ?? '0.00'}',
+                  '${userData['balance'].toString()}',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 ElevatedButton(
@@ -87,7 +87,7 @@ class _BuyerMyAccountState extends State<BuyerMyAccount> {
                     Get.to(() => BuyerAddBalance());
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: lime300,
+                    backgroundColor: primary,
                     foregroundColor: white,
                     padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
                   ),

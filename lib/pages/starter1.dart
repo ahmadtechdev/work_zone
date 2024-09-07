@@ -66,7 +66,7 @@ class _StarterState extends State<Starter> {
                 child: const Text('Create Account'),
                 style: ElevatedButton.styleFrom(
                     foregroundColor: white,
-                    backgroundColor: lime300),
+                    backgroundColor: primary),
               ),
             ),
             SizedBox(height: 20),
@@ -80,7 +80,7 @@ class _StarterState extends State<Starter> {
                   "Log In",
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: lime300
+                    color: primary
                   ),
                 )
               ],
@@ -101,7 +101,7 @@ class _StarterState extends State<Starter> {
       child: RadioListTile<String>(
         title: Row(
           children: [
-            Icon(icon, color: _selectedOption == value ? lime300 : dark100),
+            Icon(icon, color: _selectedOption == value ? primary : dark100),
             SizedBox(width: 10),
             Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
           ],

@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:work_zone/service/api_service.dart';
 import 'package:work_zone/widgets/colors.dart';
 
-class BuyerDashboard extends StatefulWidget {
-  const BuyerDashboard({Key? key}) : super(key: key);
+class SellerDashboard extends StatefulWidget {
+  const SellerDashboard({Key? key}) : super(key: key);
 
   @override
-  _BuyerDashboardState createState() => _BuyerDashboardState();
+  _SellerDashboardState createState() => _SellerDashboardState();
 }
 
-class _BuyerDashboardState extends State<BuyerDashboard> {
+class _SellerDashboardState extends State<SellerDashboard> {
   final ApiService apiService = ApiService();
   bool isLoading = true;
   Map<String, dynamic> dashboardData = {};
@@ -24,7 +24,7 @@ class _BuyerDashboardState extends State<BuyerDashboard> {
   Future<void> fetchDashboardData() async {
     try {
       setState(() => isLoading = true);
-      final response = await apiService.get('buyer-dashboard');
+      final response = await apiService.get('seller-dashboard');
       setState(() {
         dashboardData = response;
         jobs = dashboardData['jobs'] ?? [];
@@ -75,8 +75,8 @@ class _BuyerDashboardState extends State<BuyerDashboard> {
                     DashboardCard(
                       icon: Icons.shopping_cart,
                       iconColor: Colors.blue,
-                      title: '${dashboardData['jobscount'] ?? 0}',
-                      subtitle: 'Total Jobs',
+                      title: '${dashboardData['proposals'] ?? 0}',
+                      subtitle: 'Proposals Sent',
                     ),
                     DashboardCard(
                       icon: Icons.check_circle,

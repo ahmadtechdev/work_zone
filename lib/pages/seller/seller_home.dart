@@ -20,9 +20,9 @@ class _SellerDashboardState extends State<SellerDashboard> {
     final userName = userData != null
         ? (userData['fname'] ?? '') + ' ' + (userData['lname'] ?? '')
         : 'Unknown User';
-    final userAddress = userData != null
-        ? userData['address'] ?? 'No Address Provided'
-        : 'No Address Provided';
+    // final userAddress = userData != null
+    //     ? userData['address'] ?? 'No Address Provided'
+    //     : 'No Address Provided';
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -104,7 +104,7 @@ class GetMatchedCard extends StatelessWidget {
                   ElevatedButton(
                     onPressed: () {},
                     child: Text('Post a Request'),
-                    style: ElevatedButton.styleFrom(backgroundColor: lime300, foregroundColor: white),
+                    style: ElevatedButton.styleFrom(backgroundColor: primary, foregroundColor: white),
                   ),
                 ],
               ),

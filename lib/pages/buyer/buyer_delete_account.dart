@@ -86,7 +86,7 @@ class _BuyerDeleteAccountState extends State<BuyerDeleteAccount> {
                   onPressed: _deleteAccount,
                   child: const Text('Yes Delete'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: lime300,
+                    backgroundColor: primary,
                     foregroundColor: Colors.white,
                   ),
                 ),
