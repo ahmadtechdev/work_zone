@@ -5,7 +5,7 @@ import 'package:work_zone/pages/seller/seller_order.dart';
 import 'package:work_zone/widgets/colors.dart';
 
 import '../pages/seller/seller_manage_gig.dart';
-import '../pages/seller/seller_profile.dart'; // Import the Get package
+import '../pages/seller/seller_menu.dart'; // Import the Get package
 
 class CustomBottomNavigationBarSeller extends StatelessWidget {
   final int currentIndex;

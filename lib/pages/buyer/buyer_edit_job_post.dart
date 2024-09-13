@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:work_zone/widgets/colors.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:work_zone/widgets/snackbar.dart';
 import '../../service/api_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -119,6 +120,7 @@ class _BuyerJobEditPageState extends State<BuyerJobEditPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Edit Job Post'),
+        backgroundColor: primary.withOpacity(0.2),
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
@@ -159,7 +161,7 @@ class _BuyerJobEditPageState extends State<BuyerJobEditPage> {
               ),
               SizedBox(height: 16),
               _buildDropdownField('Job Duration', _selectedJobDuration,
-                  ["01 week", "03 Days", "05 Days", "07 Days", "10 Days"], (String? newValue) {
+                  ["Hourly", "03 Days", "05 Days", "07 Days", "10 Days"], (String? newValue) {
                     setState(() {
                       _selectedJobDuration = newValue!;
                     });
@@ -352,14 +354,15 @@ class _BuyerJobEditPageState extends State<BuyerJobEditPage> {
 
   Future<void> _pickImages() async {
     final ImagePicker _picker = ImagePicker();
-    final List<XFile>? images = await _picker.pickMultiImage();
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
 
-    if (images != null) {
+    if (image != null) {
       setState(() {
-        _selectedImages.addAll(images.map((image) => File(image.path)));
+        _selectedImages = [File(image.path)]; // Update with the selected single image
       });
     }
   }
+
 
   Future<void> _updateJob() async {
     if (_formKey.currentState!.validate()) {
@@ -406,24 +409,21 @@ class _BuyerJobEditPageState extends State<BuyerJobEditPage> {
         if (response.statusCode == 200) {
           var result = jsonDecode(response.body);
           if (result['status'] == 'success') {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Job updated successfully')),
-            );
+            CustomSnackBar(message: 'Job updated successfully', backgroundColor: Colors.green,).show(context);
+
             Navigator.of(context).pop();
           } else {
             print(result['message']);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Failed to update job: ${result['message']}')),
-            );
+            CustomSnackBar(message: 'Failed to update job: ${result['message']}', backgroundColor: Colors.red,).show(context);
+
+
           }
         } else {
           throw Exception('Failed to update job: ${response.body}');
         }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('An error occurred: $e')),
-        );
-        print(e);
+        CustomSnackBar(message: 'An error occurred: $e', backgroundColor: Colors.red,).show(context);
+
       }
     }
   }

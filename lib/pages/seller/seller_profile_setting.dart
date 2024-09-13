@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
 import 'package:intl/intl.dart';
 
 import '../../widgets/colors.dart';
@@ -28,7 +27,6 @@ class _SellerProfileSettingsState extends State<SellerProfileSettings> {
   String? _selectedSpeciality;
   String? _selectedGender;
   List<String> _selectedLanguages = [];
-  File? _profileImage;
   quill.QuillController _descriptionController = quill.QuillController.basic();
   List<String> _skills = [];
 
@@ -347,7 +345,6 @@ class _SellerProfileSettingsState extends State<SellerProfileSettings> {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
       setState(() {
-        _profileImage = File(image.path);
       });
     }
   }

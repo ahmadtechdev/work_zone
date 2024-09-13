@@ -1,10 +1,10 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:work_zone/widgets/bottom_navigation_bar_buyer.dart';
 import 'package:work_zone/widgets/colors.dart';
 import 'package:work_zone/service/api_service.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Import for caching
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:work_zone/widgets/snackbar.dart';
 
 import 'buyer_create_job_post.dart';
 import 'buyer_edit_job_post.dart';
@@ -17,7 +17,8 @@ class BuyerJobList extends StatefulWidget {
   _BuyerJobListState createState() => _BuyerJobListState();
 }
 
-class _BuyerJobListState extends State<BuyerJobList> {
+class _BuyerJobListState extends State<BuyerJobList>
+    with SingleTickerProviderStateMixin {
   final ApiService apiService = ApiService();
   List<dynamic> jobs = [];
   bool isLoading = true;
@@ -29,55 +30,50 @@ class _BuyerJobListState extends State<BuyerJobList> {
   }
 
   Future<void> loadJobsFromCacheOrFetch() async {
-    // First, try to load jobs from cache
     final prefs = await SharedPreferences.getInstance();
-    // await prefs.remove('cachedJobs');
     final cachedJobs = prefs.getString('cachedJobs');
 
     if (cachedJobs != null && cachedJobs.isNotEmpty) {
-      // If cache exists, load it
       setState(() {
-        jobs = List<dynamic>.from(jsonDecode(cachedJobs)
-            as List<dynamic>); // Convert JSON string to list
+        jobs = List<dynamic>.from(jsonDecode(cachedJobs));
         isLoading = false;
       });
     } else {
-      // If no cache, fetch from API
       fetchJobs();
     }
   }
 
   Future<void> fetchJobs() async {
     try {
-      setState(() => isLoading = true); // Show loading indicator
-      final fetchedJobs = await apiService.getJobs(); // Use the new GET method
+      setState(() => isLoading = true);
+      final fetchedJobs = await apiService.get("get-jobs");
 
+      print(fetchedJobs);
       setState(() {
-        jobs = fetchedJobs;
+        jobs = fetchedJobs['jobs'] as List<dynamic>;
       });
-
-      // Cache the jobs data
+      print(jobs);
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-          'cachedJobs', jsonEncode(jobs)); // Save data as string
+      await prefs.setString('cachedJobs', jsonEncode(jobs));
     } catch (e) {
       _showErrorSnackbar('Failed to load jobs. Please try again.');
     } finally {
-      setState(() => isLoading = false); // Hide loading indicator
+      setState(() => isLoading = false);
     }
   }
 
   void _showErrorSnackbar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    CustomSnackBar(
+      message: message,
+      backgroundColor: Colors.red,
+    ).show(context);
   }
 
   Future<void> _deleteJob(int jobId) async {
     try {
       await apiService.deleteJob(jobId);
       _showErrorSnackbar('Job deleted successfully');
-      fetchJobs(); // Refresh the job list after deleting
+      fetchJobs();
     } catch (e) {
       _showErrorSnackbar('Failed to delete job. Please try again.');
     }
@@ -125,6 +121,7 @@ class _BuyerJobListState extends State<BuyerJobList> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text('Job Posts'),
+        backgroundColor: primary.withOpacity(0.2),
       ),
       body: isLoading ? _buildSkeletonLoader() : _buildJobList(),
       floatingActionButton: FloatingActionButton(
@@ -133,7 +130,7 @@ class _BuyerJobListState extends State<BuyerJobList> {
             context,
             MaterialPageRoute(builder: (context) => AddJobPostPage()),
           );
-          fetchJobs(); // Refresh the job list after adding a new job
+          fetchJobs();
         },
         backgroundColor: primary,
         foregroundColor: white,
@@ -175,10 +172,12 @@ class _BuyerJobListState extends State<BuyerJobList> {
         ? '${apiService.baseUrlImg}${job['gig_img']}'
         : 'https://cdn-icons-png.flaticon.com/128/13434/13434972.png';
 
+    print("${apiService.baseUrlImg}${job['gig_img']}");
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Card(
-        elevation: 8, // Shadow
+        elevation: 8,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -189,16 +188,24 @@ class _BuyerJobListState extends State<BuyerJobList> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  imageUrl,
-                  width: 100,
-                  height: 180,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    width: 80,
-                    height: 80,
-                    color: Colors.grey[200],
-                    child: Icon(Icons.image, color: Colors.grey[400]),
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: primary, // Set your desired border color
+                      width: 2.0, // Set the border width
+                    ),
+                  ),
+                  child: Image.network(
+                    imageUrl,
+                    width: 100,
+                    height: 180,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      width: 80,
+                      height: 80,
+                      color: Colors.grey[200],
+                      child: Icon(Icons.image, color: Colors.grey[400]),
+                    ),
                   ),
                 ),
               ),
@@ -270,7 +277,7 @@ class _BuyerJobListState extends State<BuyerJobList> {
                 builder: (context) => BuyerJobEditPage(jobId: job['id']),
               ),
             );
-            fetchJobs(); // Refresh the job list after editing
+            fetchJobs();
           },
         ),
         IconButton(
@@ -301,7 +308,6 @@ class _BuyerJobListState extends State<BuyerJobList> {
   }
 }
 
-// Skeleton Card Widget
 class ShimmerCard extends StatelessWidget {
   const ShimmerCard({super.key});
 
@@ -312,7 +318,7 @@ class ShimmerCard extends StatelessWidget {
         color: Colors.grey[300],
         borderRadius: BorderRadius.circular(12),
       ),
-      height: 80, // Height for the skeleton loader
+      height: 80,
     );
   }
 }

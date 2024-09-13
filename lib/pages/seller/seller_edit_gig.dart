@@ -218,6 +218,23 @@ class _SellerEditGigState extends State<SellerEditGig> {
     ),
   ];
 
+  List<String> deliveryTimeOptions = [
+    'Select Delivery Time',
+    '1 Day',
+    '2 Days',
+    '3 Days',
+    '4 Days',
+    '5 Days',
+    '6 Days',
+    '7 Days',
+    '10 Days',
+    '15 Days',
+    '20 Days',
+    '30 Days',
+    '45 Days',
+    '60 Days',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -529,8 +546,21 @@ class _SellerEditGigState extends State<SellerEditGig> {
             Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             _buildTextField('Description', controllers.description, maxLines: 3),
-            _buildDropdown('Delivery Time', controllers.deliveryTime, ['1 day', '3 days', '7 days']),
-            _buildDropdown('Revision', controllers.revision, ['1 time', '2 times', '3 times']),
+            _buildDropdown(
+                'Delivery Time', controllers.deliveryTime, deliveryTimeOptions),
+            _buildDropdown('Revision', controllers.revision, [
+              '1',
+              '2',
+              '3',
+              '4',
+              '5',
+              '6',
+              '7',
+              '8',
+              '9',
+              '10',
+              'Unlimited'
+            ]),
             _buildTextField('Price', controllers.price),
           ],
         ),

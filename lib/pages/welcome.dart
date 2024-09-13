@@ -23,13 +23,13 @@ class WelcomeScreen extends StatelessWidget {
         height: screenHeight,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: offWhite,
+          // color: offWhite,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              'lib/assets/img/logo/logo.png',
+            SvgPicture.asset(
+              'lib/assets/img/logo/logo-light.svg',
               height: screenHeight / logoHeightFactor,
               width: screenWidth / logoWidthFactor,
             ),

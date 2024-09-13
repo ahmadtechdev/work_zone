@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:work_zone/pages/buyer/buyer_home.dart';
 import 'package:work_zone/pages/buyer/buyer_job_list.dart';
 import 'package:work_zone/pages/buyer/buyer_order.dart';
-import 'package:work_zone/pages/buyer/buyer_profile.dart';
+import 'package:work_zone/pages/buyer/buyer_menu.dart';
 import 'package:work_zone/widgets/colors.dart';
 
 class CustomBottomNavigationBarBuyer extends StatelessWidget {

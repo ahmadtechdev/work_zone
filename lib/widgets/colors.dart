@@ -2,8 +2,6 @@
 import 'package:flutter/material.dart';
 
 const Color white = Color(0xFFFFFFFF);
-
-
 const Color labelColor = Color(0xFFEDEBE7);
 const Color dark50 = Color(0xFFedebe7);
 const Color dark100 = Color(0xFFd9d9d9);

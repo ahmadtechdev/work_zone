@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:work_zone/service/api_service.dart';
 import 'package:work_zone/widgets/colors.dart';
+import 'package:shimmer/shimmer.dart'; // Add shimmer package for skeleton loader
 
 class BuyerDashboard extends StatefulWidget {
   const BuyerDashboard({Key? key}) : super(key: key);
@@ -24,17 +28,37 @@ class _BuyerDashboardState extends State<BuyerDashboard> {
   Future<void> fetchDashboardData() async {
     try {
       setState(() => isLoading = true);
-      final response = await apiService.get('buyer-dashboard');
-      setState(() {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedData = prefs.getString('dashboardData');
+
+      if (cachedData != null) {
+        dashboardData = Map<String, dynamic>.from(jsonDecode(cachedData));
+        jobs = dashboardData['jobs'] ?? [];
+      } else {
+        final response = await apiService.get('buyer-dashboard');
         dashboardData = response;
         jobs = dashboardData['jobs'] ?? [];
-        isLoading = false;
-      });
+        prefs.setString('dashboardData', jsonEncode(dashboardData));
+      }
     } catch (e) {
-      setState(() => isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to load dashboard data: $e')),
       );
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
+  Color getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return primary;
+      case 'pending':
+        return secondary;
+      case 'in progress':
+        return Colors.blue;
+      default:
+        return Colors.green;
     }
   }
 
@@ -49,7 +73,7 @@ class _BuyerDashboardState extends State<BuyerDashboard> {
         title: const Text('Dashboard'),
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? buildSkeletonLoader()
           : RefreshIndicator(
         onRefresh: fetchDashboardData,
         child: SingleChildScrollView(
@@ -66,25 +90,25 @@ class _BuyerDashboardState extends State<BuyerDashboard> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    DashboardCard(
+                    buildDashboardCard(
                       icon: Icons.account_balance_wallet,
                       iconColor: Colors.green,
                       title: '${dashboardData['user_balance'] ?? 0}',
                       subtitle: 'Current balance',
                     ),
-                    DashboardCard(
+                    buildDashboardCard(
                       icon: Icons.shopping_cart,
                       iconColor: Colors.blue,
                       title: '${dashboardData['jobscount'] ?? 0}',
                       subtitle: 'Total Jobs',
                     ),
-                    DashboardCard(
+                    buildDashboardCard(
                       icon: Icons.check_circle,
                       iconColor: Colors.purple,
                       title: '${dashboardData['orders_completed'] ?? 0}',
                       subtitle: 'Complete Orders',
                     ),
-                    DashboardCard(
+                    buildDashboardCard(
                       icon: Icons.pending_actions,
                       iconColor: Colors.cyan,
                       title: '${dashboardData['orders_active'] ?? 0}',
@@ -104,7 +128,7 @@ class _BuyerDashboardState extends State<BuyerDashboard> {
                   itemCount: jobs.length,
                   itemBuilder: (context, index) {
                     final job = jobs[index];
-                    return JobCard(job: job, apiService: apiService);
+                    return buildJobCard(job);
                   },
                 ),
               ],
@@ -114,24 +138,80 @@ class _BuyerDashboardState extends State<BuyerDashboard> {
       ),
     );
   }
-}
 
-class DashboardCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String subtitle;
+  Widget buildSkeletonLoader() {
+    return ListView(
+      padding: const EdgeInsets.all(16.0),
+      children: [
+        buildSkeletonCard(),
+        buildSkeletonCard(),
+        buildSkeletonCard(),
+        buildSkeletonCard(),
+      ],
+    );
+  }
 
-  const DashboardCard({
-    Key? key,
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.subtitle,
-  }) : super(key: key);
+  Widget buildSkeletonCard() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade300,
+      highlightColor: Colors.grey.shade100,
+      child: Card(
+        elevation: 4,
+        margin: const EdgeInsets.only(bottom: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                color: Colors.grey,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      height: 16,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      height: 16,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      height: 16,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: 80,
+                      height: 16,
+                      color: Colors.grey,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget buildDashboardCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+  }) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -157,19 +237,12 @@ class DashboardCard extends StatelessWidget {
       ),
     );
   }
-}
 
-class JobCard extends StatelessWidget {
-  final Map<String, dynamic> job;
-  final ApiService apiService;
-
-  const JobCard({Key? key, required this.job, required this.apiService}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
+  Widget buildJobCard(Map<String, dynamic> job) {
     final imageUrl = job['gig_img'] != null
         ? '${apiService.baseUrlImg}${job['gig_img']}'
         : 'https://cdn-icons-png.flaticon.com/128/13434/13434972.png';
+    final statusColor = getStatusColor(job['status'] ?? 'Unknown');
 
     return Card(
       elevation: 4,
@@ -211,7 +284,7 @@ class JobCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "Budget: \$${job['budget'] ?? 0} - \$${job['maxbudget'] ?? 0}",
+                    "Budget: ${job['budget'] ?? 0} - ${job['maxbudget'] ?? 0}",
                     style: TextStyle(color: dark400.withOpacity(0.6), fontSize: 14),
                   ),
                   const SizedBox(height: 4),
@@ -222,7 +295,7 @@ class JobCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     'Status: ${job['status'] ?? 'No Status'}',
-                    style: TextStyle(color: primary, fontSize: 14),
+                    style: TextStyle(color: statusColor, fontSize: 14),
                   ),
                 ],
               ),

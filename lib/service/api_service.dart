@@ -7,10 +7,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as path;
 
 class ApiService {
-  final String baseUrl = "http://10.10.0.72:500/api/";
-  final String baseUrlImg = "http://10.10.0.72:500/";
-  // final String baseUrl = "https://miftag.com/api/";
-  // final String baseUrlImg = "https://miftag.com/";
+  // final String baseUrl = "http://10.10.0.72:500/api/";
+  // final String baseUrlImg = "http://10.10.0.72:500/";
+  final String baseUrl = "https://miftag.com/api/";
+  final String baseUrlImg = "https://miftag.com/public/";
 
 
   Future<Map<String, dynamic>> post(String endpoint, Map<String, dynamic> body) async {
@@ -21,36 +21,35 @@ class ApiService {
     print(url);
     print(body);
 
-    try {
+    final response = await http.post(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+      body: jsonEncode(body),
+    );
 
-      final response = await http.post(
-        url,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $token",
-        },
-        body: jsonEncode(body),
-      );
+    print(response);
 
-      print(response);
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
 
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        // Extract error message from response body if possible
-        String errorMessage = 'Failed to load data';
-        try {
-          final errorResponse = jsonDecode(response.body);
-          errorMessage = errorResponse['message'] ?? errorMessage;
-        } catch (e) {
-          // Handle JSON parsing error
-        }
-        throw Exception(errorMessage);
+      // Extract error message from response body if possible
+      String errorMessage = 'Failed to load data';
+      try {
+        final errorResponse = jsonDecode(response.body);
+        errorMessage = errorResponse['message'] ?? errorMessage;
+        print(errorMessage);
+      } catch (e) {
+        // Handle JSON parsing error
+        print(e);
       }
-    } catch (e) {
-      // Handle network errors or other unexpected issues
-      throw Exception('Network error or unexpected issue: $e');
+      throw Exception(errorMessage);
     }
+
+
   }
 
   Future<Map<String, dynamic>> get(String endpoint) async {
@@ -111,79 +110,8 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> logoutAccount() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token') ?? '';
 
-    final url = Uri.parse(baseUrl + 'logout');
-    final response = await http.post(
-      url,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-    );
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to logout account');
-    }
-  }
-
-  Future<Map<String, dynamic>> updatePassword(String currentPassword, String newPassword, String newPasswordConfirmation) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token') ?? '';
-
-    final url = Uri.parse(baseUrl + 'user-update-password');
-    final response = await http.post(
-      url,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode({
-        'current_password': currentPassword,
-        'new_password': newPassword,
-        'new_password_confirmation': newPasswordConfirmation,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to update password');
-    }
-  }
-
-  Future<Map<String, dynamic>> storeJob(Map<String, dynamic> jobData) async {
-    return await post('store-job', jobData);
-  }
-
-  Future<List<dynamic>> getJobs() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token') ?? '';
-
-    final url = Uri.parse(baseUrl + 'get-jobs');
-    final response = await http.get(
-      url,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body);
-      if (responseData['status'] == 'success') {
-        return responseData['jobs'];
-      } else {
-        throw Exception('Error fetching jobs: ${responseData['message']}');
-      }
-    } else {
-      throw Exception('Failed to load jobs');
-    }
-  }
   Future<Map<String, dynamic>> getJob(int jobId) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token') ?? '';
@@ -260,71 +188,6 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> getBuyerAccount() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token') ?? '';
-
-    final url = Uri.parse('${baseUrl}buyer-account');
-    final response = await http.get(
-      url,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-    );
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load job');
-    }
-  }
-
-  Future<Map<String, dynamic>> getTransactionDetails() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token') ?? '';
-
-    final url = Uri.parse(baseUrl + 'transaction-details');
-    final response = await http.get(
-      url,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-    );
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load transaction details');
-    }
-  }
-
-  Future<Map<String, dynamic>> storeBalance(String senderName, String tid, double amount) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token') ?? '';
-
-    final url = Uri.parse(baseUrl + 'store-balance');
-    final response = await http.post(
-      url,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode({
-        'sender_name': senderName,
-        'tid': tid,
-        'amount': amount,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to store balance');
-    }
-  }
-
   Future<Map<String, dynamic>> getUserProfile() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token') ?? '';
@@ -380,6 +243,7 @@ class ApiService {
       throw Exception('Failed to update profile: ${response.body}');
     }
   }
+
   Future<List<Map<String, dynamic>>> getGigsForUser() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token') ?? '';
@@ -415,6 +279,7 @@ class ApiService {
     final token = prefs.getString('token') ?? '';
 
     final url = Uri.parse('${baseUrl}delete-gig/$gigId');
+    print(url);
     final response = await http.delete(
       url,
       headers: {
@@ -422,7 +287,7 @@ class ApiService {
         "Authorization": "Bearer $token",
       },
     );
-
+    print(response.statusCode);
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -486,25 +351,6 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> getSellerAccount() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token') ?? '';
-
-    final url = Uri.parse('${baseUrl}my-account');
-    final response = await http.get(
-      url,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-    );
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load job');
-    }
-  }
 
   Future<Map<String, dynamic>> storeWithdraw(
       String bankName,

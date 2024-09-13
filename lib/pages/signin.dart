@@ -57,7 +57,9 @@ class _SignInScreenState extends State<SignInScreen> {
           _showSnackBar('Login failed: ${response['message'] ?? "Unknown error"}', Colors.red);
         }
       } catch (e) {
+
         _showSnackBar('An error occurred: $e', Colors.red);
+        print(e);
       } finally {
         setState(() {
           _isLoading = false;
@@ -104,7 +106,7 @@ class _SignInScreenState extends State<SignInScreen> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         centerTitle: true,
-        backgroundColor: offWhite,
+        // backgroundColor: offWhite,
         title: const Text(
           "Sign In",
           style: TextStyle(fontWeight: FontWeight.bold),

@@ -1,24 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:work_zone/widgets/colors.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import '../../service/api_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:vsc_quill_delta_to_html/vsc_quill_delta_to_html.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
+import 'package:vsc_quill_delta_to_html/vsc_quill_delta_to_html.dart';
+
+import '../../service/api_service.dart';
+import '../../widgets/colors.dart';
+import '../../widgets/snackbar.dart'; // Assuming CustomSnackBar is here
 
 class AddJobPostPage extends StatefulWidget {
   @override
   _AddJobPostPageState createState() => _AddJobPostPageState();
 }
 
-class _AddJobPostPageState extends State<AddJobPostPage> {
+class _AddJobPostPageState extends State<AddJobPostPage>
+    with SingleTickerProviderStateMixin {
   final ApiService apiService = ApiService();
   final jobTitleController = TextEditingController();
-  String _selectedJobDuration = "01 week";
+  String _selectedJobDuration = "Hourly";
   String _selectedJobType = "Fixed Price";
   String _selectedCategory = "web-development";
   final QuillController _descriptionController = QuillController.basic();
@@ -27,6 +30,8 @@ class _AddJobPostPageState extends State<AddJobPostPage> {
   List<File> _selectedImages = [];
 
   final _formKey = GlobalKey<FormState>();
+  late AnimationController _animationController;
+  late Animation<double> _fadeInAnimation;
 
   final List<Map<String, String>> categories = [
     {"value": "", "label": "Select a Category"},
@@ -73,6 +78,32 @@ class _AddJobPostPageState extends State<AddJobPostPage> {
     {"value": "consulting", "label": "Consulting"},
     {"value": "others", "label": "Others"},
   ];
+
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _fadeInAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeIn,
+    );
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    jobTitleController.dispose();
+    _descriptionController.dispose();
+    minBudgetController.dispose();
+    maxBudgetController.dispose();
+    _animationController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -82,235 +113,246 @@ class _AddJobPostPageState extends State<AddJobPostPage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text('Post a Job'),
+        backgroundColor: primary.withOpacity(0.2),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              const Text('Job Info',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: jobTitleController,
-                decoration: const InputDecoration(
-                  labelText: 'Job Title',
-                  border: OutlineInputBorder(),
+      body: FadeTransition(
+        opacity: _fadeInAnimation,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              children: [
+                _buildHeader('Job Info'),
+                _buildTextField(
+                  controller: jobTitleController,
+                  label: 'Job Title',
+                  validator: (value) {
+                    if (value!.isEmpty) return "Please enter Job Title";
+                    if (value.length < 3) return 'Title must be more than 2 characters';
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value!.isEmpty) {
-                    return "Please enter Job Title";
-                  } else if (value.length < 3) {
-                    return 'Name must be more than 2 characters';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildDropdownField(
-                'Category',
-                _selectedCategory,
-                categories.map((c) => c["value"]!).toList(),
-                    (String? newValue) {
-                  setState(() {
+                const SizedBox(height: 16),
+                _buildDropdownField(
+                  'Category',
+                  _selectedCategory,
+                  categories.map((c) => c['value']!).toList(),
+                      (newValue) => setState(() {
                     _selectedCategory = newValue!;
-                  });
-                },
-                categories.map((c) => c["label"]!).toList(),
-              ),
-              const SizedBox(height: 16),
-              _buildDropdownField('Job Duration', _selectedJobDuration,
-                  ["01 week", "03 Days", "05 Days", "07 Days", "10 Days"], (String? newValue) {
-                    setState(() {
-                      _selectedJobDuration = newValue!;
-                    });
                   }),
-              const SizedBox(height: 16),
-              _buildDropdownField('Job Type', _selectedJobType, ['Fixed Price', "Urgent"], (String? newValue) {
-                setState(() {
-                  _selectedJobType = newValue!;
-                });
-              }),
-              const SizedBox(height: 16),
-              const Text('Description',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Container(
-                height: 300,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(4),
+                  categories.map((c) => c['label']!).toList(),
                 ),
-                child: Column(
-                  children: [
-                    QuillSimpleToolbar(
-                      controller: _descriptionController,
-                      configurations: QuillSimpleToolbarConfigurations(
-                        toolbarIconAlignment: WrapAlignment.start,
-                        multiRowsDisplay: false,
-                        showDividers: false,
-                        showFontFamily: false,
-                        showFontSize: false,
-                        showBoldButton: true,
-                        showItalicButton: true,
-                        showUnderLineButton: true,
-                        showStrikeThrough: false,
-                        showInlineCode: false,
-                        showColorButton: true,
-                        showBackgroundColorButton: true,
-                        showClearFormat: true,
-                        showAlignmentButtons: true,
-                        showLeftAlignment: true,
-                        showCenterAlignment: true,
-                        showRightAlignment: true,
-                        showJustifyAlignment: true,
-                        showHeaderStyle: true,
-                        showListNumbers: true,
-                        showListBullets: true,
-                        showListCheck: false,
-                        showCodeBlock: false,
-                        showQuote: false,
-                        showIndent: false,
-                        showLink: false,
-                        showUndo: true,
-                        showRedo: false,
-                      ),
-                    ),
-                    Expanded(
-                      child: QuillEditor.basic(
-                        controller: _descriptionController,
-                        configurations: const QuillEditorConfigurations(
-                          scrollable: true,
-                          autoFocus: false,
-                          // readOnly: false,
-                          placeholder: 'Enter job description...',
-                          padding: EdgeInsets.all(8),
-                        ),
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 16),
+                _buildDropdownField(
+                  'Job Duration',
+                  _selectedJobDuration,
+                  ["Hourly", "03 Days", "05 Days", "07 Days", "10 Days"],
+                      (newValue) => setState(() {
+                    _selectedJobDuration = newValue!;
+                  }),
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: minBudgetController,
-                decoration: InputDecoration(
-                  labelText: 'Min Budget',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 16),
+                _buildDropdownField(
+                  'Job Type',
+                  _selectedJobType,
+                  ['Fixed Price', "Urgent"],
+                      (newValue) => setState(() {
+                    _selectedJobType = newValue!;
+                  }),
                 ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value!.isEmpty) {
-                    return "Please enter Min Budget";
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: maxBudgetController,
-                decoration: InputDecoration(
-                  labelText: 'Max Budget',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 16),
+                _buildHeader('Description'),
+                _buildDescriptionEditor(),
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: minBudgetController,
+                  label: 'Min Budget',
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value!.isEmpty) return "Please enter Min Budget";
+                    return null;
+                  },
                 ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value!.isEmpty) {
-                    return "Please enter Max Budget";
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              const Text('Upload Images',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              OutlinedButton(
-                onPressed: _pickImages,
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.upload_file),
-                    SizedBox(width: 8),
-                    Text('Upload File & Image'),
-                  ],
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: maxBudgetController,
+                  label: 'Max Budget',
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value!.isEmpty) return "Please enter Max Budget";
+                    return null;
+                  },
                 ),
-              ),
-              if (_selectedImages.isNotEmpty)
-                Container(
-                  height: 100,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _selectedImages.length,
-                    itemBuilder: (context, index) {
-                      return Stack(
-                        alignment: Alignment.topRight,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Image.file(_selectedImages[index], width: 80, height: 80, fit: BoxFit.cover),
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.close, color: Colors.red),
-                            onPressed: () {
-                              setState(() {
-                                _selectedImages.removeAt(index);
-                              });
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _submitJobPost,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primary,
-                  foregroundColor: white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Text('Post'),
-              ),
-            ],
+                const SizedBox(height: 16),
+                _buildHeader('Upload Images'),
+                _buildImagePicker(),
+                _buildSelectedImagesPreview(), // Display selected images
+                const SizedBox(height: 24),
+                _buildSubmitButton(),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildDropdownField(String label, String value, List<String> options, Function(String?) onChanged, [List<String>? displayOptions]) {
-    return InputDecorator(
+  Widget _buildHeader(String title) {
+    return Text(
+      title,
+      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: dark400),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
       decoration: InputDecoration(
         labelText: label,
+        labelStyle: TextStyle(color: dark200),
         border: const OutlineInputBorder(),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          onChanged: onChanged,
-          items: options.asMap().entries.map<DropdownMenuItem<String>>((entry) {
-            int idx = entry.key;
-            String option = entry.value;
-            return DropdownMenuItem<String>(
-              value: option,
-              child: Text(displayOptions != null ? displayOptions[idx] : option),
-            );
-          }).toList(),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: primary),
         ),
       ),
+      keyboardType: keyboardType,
+      validator: validator,
+    );
+  }
+
+  Widget _buildDescriptionEditor() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        Container(
+          height: 300,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Column(
+            children: [
+              // Toolbar
+              QuillSimpleToolbar(
+                controller: _descriptionController,
+                configurations: QuillSimpleToolbarConfigurations(
+                  toolbarIconAlignment: WrapAlignment.start,
+                  multiRowsDisplay: false, // Single row toolbar
+                  showDividers: false,
+                  showBoldButton: true,
+                  showItalicButton: true,
+                  showUnderLineButton: true,
+                  showColorButton: true,
+                  showBackgroundColorButton: true,
+                  showClearFormat: true,
+                  showAlignmentButtons: true,
+                  showLeftAlignment: true,
+                  showCenterAlignment: true,
+                  showRightAlignment: true,
+                  showJustifyAlignment: true,
+                  showHeaderStyle: true,
+                  showListNumbers: true,
+                  showListBullets: true,
+                  showUndo: true,
+                ),
+              ),
+              // Editor
+              Expanded(
+                child: QuillEditor.basic(
+                  controller: _descriptionController,
+                  configurations: const QuillEditorConfigurations(
+                    scrollable: true,
+                    autoFocus: false,
+                    placeholder: 'Enter job description...',
+                    padding: EdgeInsets.all(8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImagePicker() {
+    return OutlinedButton(
+      onPressed: _pickImages,
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(color: primary),
+      ),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.upload_file, color: primary),
+          SizedBox(width: 8),
+          Text('Upload File & Image', style: TextStyle(color: primary)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSelectedImagesPreview() {
+    return _selectedImages.isNotEmpty
+        ? Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: _selectedImages
+            .map((image) => Stack(
+          alignment: Alignment.topRight,
+          children: [
+            Image.file(
+              image,
+              width: 100,
+              height: 100,
+              fit: BoxFit.cover,
+            ),
+            IconButton(
+              icon: Icon(Icons.cancel, color: secondary),
+              onPressed: () {
+                setState(() {
+                  _selectedImages.remove(image);
+                });
+              },
+            ),
+          ],
+        ))
+            .toList(),
+      ),
+    )
+        : const SizedBox.shrink();
+  }
+
+  Widget _buildSubmitButton() {
+    return ElevatedButton(
+      onPressed: _submitJobPost,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: primary, // Your brand primary color
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      child: const Text('Post', style: TextStyle(color: white, fontSize: 18)),
     );
   }
 
   Future<void> _pickImages() async {
     final ImagePicker _picker = ImagePicker();
-    final List<XFile>? images = await _picker.pickMultiImage();
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
 
-    if (images != null) {
+    if (image != null) {
       setState(() {
-        _selectedImages.addAll(images.map((image) => File(image.path)));
+        _selectedImages = [File(image.path)]; // Update with the selected single image
       });
     }
   }
@@ -358,32 +400,50 @@ class _AddJobPostPageState extends State<AddJobPostPage> {
         if (response.statusCode == 200) {
           var result = jsonDecode(response.body);
           if (result['status'] == 'success') {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Job posted successfully')),
-            );
+            CustomSnackBar(
+              message: 'Job posted successfully',
+              backgroundColor: Colors.green,
+            ).show(context);
             Navigator.of(context).pop();
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Failed to post job: ${result['message']}')),
-            );
+            CustomSnackBar(
+              message: 'An error occurred: ',
+              backgroundColor: Colors.red,
+            ).show(context);
           }
         } else {
           throw Exception('Failed to post job: ${response.body}');
         }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('An error occurred: $e')),
-        );
+        CustomSnackBar(
+          message: 'An error occurred: $e',
+          backgroundColor: Colors.red,
+        ).show(context);
       }
     }
   }
-  @override
-  void dispose() {
-    jobTitleController.dispose();
-    _descriptionController.dispose();
-    minBudgetController.dispose();
-    maxBudgetController.dispose();
-    super.dispose();
-  }
-}
 
+  Widget _buildDropdownField(String label, String value, List<String> options, Function(String?) onChanged, [List<String>? displayOptions]) {
+    return InputDecorator(
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          onChanged: onChanged,
+          items: options.asMap().entries.map<DropdownMenuItem<String>>((entry) {
+            int idx = entry.key;
+            String option = entry.value;
+            return DropdownMenuItem<String>(
+              value: option,
+              child: Text(displayOptions != null ? displayOptions[idx] : option),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+}

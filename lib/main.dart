@@ -18,7 +18,7 @@ void main() async {
     // Check user role (assuming you saved it in SharedPreferences as well)
     String role = prefs.getString('role') ?? '';
     if (role == 'seller') {
-      initialScreen = SellerDashboard();
+      initialScreen = const SellerDashboard();
     } else if (role == 'buyer') {
       initialScreen = BuyerHome();
     } else {

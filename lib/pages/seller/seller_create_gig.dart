@@ -9,13 +9,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vsc_quill_delta_to_html/vsc_quill_delta_to_html.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
+import 'package:work_zone/widgets/snackbar.dart';
 
 import '../../service/api_service.dart';
 import '../../widgets/colors.dart';
 import 'seller_manage_gig.dart';
 
 class SellerCreateGig extends StatefulWidget {
-  const SellerCreateGig({Key? key}) : super(key: key);
+  const SellerCreateGig({super.key});
 
   @override
   _SellerCreateGigState createState() => _SellerCreateGigState();
@@ -38,6 +39,23 @@ class _SellerCreateGigState extends State<SellerCreateGig> {
     'Standard': PackageControllers(),
     'Premium': PackageControllers(),
   };
+
+  List<String> deliveryTimeOptions = [
+    'Select Delivery Time',
+    '1 Day',
+    '2 Days',
+    '3 Days',
+    '4 Days',
+    '5 Days',
+    '6 Days',
+    '7 Days',
+    '10 Days',
+    '15 Days',
+    '20 Days',
+    '30 Days',
+    '45 Days',
+    '60 Days',
+  ];
 
   // Categories structure
   final List<CategoryGroup> categories = [
@@ -216,7 +234,6 @@ class _SellerCreateGigState extends State<SellerCreateGig> {
     ),
   ];
 
-
   @override
   void initState() {
     super.initState();
@@ -226,7 +243,10 @@ class _SellerCreateGigState extends State<SellerCreateGig> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create a Gig')),
+      appBar: AppBar(
+        title: const Text('Create a Gig'),
+        backgroundColor: primary.withOpacity(0.2),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -239,9 +259,8 @@ class _SellerCreateGigState extends State<SellerCreateGig> {
               _buildCategoryDropdown(),
               _buildDescriptionField(),
               _buildSectionTitle('Pricing Packages'),
-              ..._packageControllers.entries.map((entry) =>
-                  _buildPricingPackageCard(entry.key, entry.value)
-              ),
+              ..._packageControllers.entries.map(
+                  (entry) => _buildPricingPackageCard(entry.key, entry.value)),
               _buildSectionTitle('Upload Gig Images'),
               _buildImageUploader(),
               const SizedBox(height: 24),
@@ -256,21 +275,26 @@ class _SellerCreateGigState extends State<SellerCreateGig> {
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+      child: Text(title,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, {int maxLines = 1}) {
+  Widget _buildTextField(String label, TextEditingController controller,
+      {int maxLines = 1, bool isNumber = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        // Set keyboard type based on isNumber
         decoration: InputDecoration(
           labelText: label,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         ),
-        validator: (value) => value?.isEmpty ?? true ? 'Please enter $label' : null,
+        validator: (value) =>
+            value?.isEmpty ?? true ? 'Please enter $label' : null,
       ),
     );
   }
@@ -285,8 +309,10 @@ class _SellerCreateGigState extends State<SellerCreateGig> {
               value: _selectedCategory.isEmpty ? null : _selectedCategory,
               decoration: InputDecoration(
                 labelText: 'Category',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
               ),
               items: _buildDropdownItems(),
               onChanged: (String? newValue) {
@@ -294,7 +320,8 @@ class _SellerCreateGigState extends State<SellerCreateGig> {
                   setState(() => _selectedCategory = newValue);
                 }
               },
-              validator: (value) => value == null ? 'Please select a category' : null,
+              validator: (value) =>
+                  value == null ? 'Please select a category' : null,
               isDense: true,
               isExpanded: true,
               icon: const Icon(Icons.arrow_drop_down),
@@ -302,7 +329,7 @@ class _SellerCreateGigState extends State<SellerCreateGig> {
               elevation: 16,
               style: const TextStyle(color: Colors.black, fontSize: 16),
               dropdownColor: Colors.white,
-              menuMaxHeight: MediaQuery.sizeOf(context).height/1.75,
+              menuMaxHeight: MediaQuery.sizeOf(context).height / 1.75,
             ),
           );
         },
@@ -316,26 +343,30 @@ class _SellerCreateGigState extends State<SellerCreateGig> {
       items.add(DropdownMenuItem<String>(
         value: '__GROUP__${group.name}',
         enabled: false,
-        child: Text(group.name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+        child: Text(group.name,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold, color: Colors.grey)),
       ));
       items.addAll(group.items.map((item) => DropdownMenuItem<String>(
-        value: item,
-        child: Padding(
-          padding: const EdgeInsets.only(left: 16.0),
-          child: Text(item, overflow: TextOverflow.ellipsis),
-        ),
-      )));
+            value: item,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 16.0),
+              child: Text(item, overflow: TextOverflow.ellipsis),
+            ),
+          )));
     }
     return items;
   }
+
   Widget _buildDescriptionField() {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Description', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          SizedBox(height: 8),
+          const Text('Description',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
           Container(
             height: 300,
             decoration: BoxDecoration(
@@ -346,7 +377,7 @@ class _SellerCreateGigState extends State<SellerCreateGig> {
               children: [
                 QuillSimpleToolbar(
                   controller: _descriptionController,
-                  configurations: QuillSimpleToolbarConfigurations(
+                  configurations: const QuillSimpleToolbarConfigurations(
                     toolbarIconAlignment: WrapAlignment.start,
                     multiRowsDisplay: false,
                     showDividers: false,
@@ -396,7 +427,8 @@ class _SellerCreateGigState extends State<SellerCreateGig> {
     );
   }
 
-  Widget _buildPricingPackageCard(String title, PackageControllers controllers) {
+  Widget _buildPricingPackageCard(
+      String title, PackageControllers controllers) {
     return Card(
       elevation: 4,
       margin: const EdgeInsets.only(bottom: 16),
@@ -405,19 +437,36 @@ class _SellerCreateGigState extends State<SellerCreateGig> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(title,
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            _buildTextField('Description', controllers.description, maxLines: 3),
-            _buildDropdown('Delivery Time', controllers.deliveryTime, ['1 day', '3 days', '7 days']),
-            _buildDropdown('Revision', controllers.revision, ['1 time', '2 times', '3 times']),
-            _buildTextField('Price', controllers.price),
+            _buildTextField('Description', controllers.description,
+                maxLines: 3),
+            _buildDropdown(
+                'Delivery Time', controllers.deliveryTime, deliveryTimeOptions),
+            _buildDropdown('Revision', controllers.revision, [
+              '1',
+              '2',
+              '3',
+              '4',
+              '5',
+              '6',
+              '7',
+              '8',
+              '9',
+              '10',
+              'Unlimited'
+            ]),
+            _buildTextField('Price', controllers.price, isNumber: true),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDropdown(String label, ValueNotifier<String?> valueNotifier, List<String> items) {
+  Widget _buildDropdown(
+      String label, ValueNotifier<String?> valueNotifier, List<String> items) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: ValueListenableBuilder<String?>(
@@ -427,7 +476,8 @@ class _SellerCreateGigState extends State<SellerCreateGig> {
             value: value,
             decoration: InputDecoration(
               labelText: label,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
             ),
             items: items.map((String item) {
               return DropdownMenuItem<String>(value: item, child: Text(item));
@@ -448,7 +498,7 @@ class _SellerCreateGigState extends State<SellerCreateGig> {
     return Column(
       children: [
         OutlinedButton(
-          onPressed: _pickImage,
+          onPressed: _pickImages,
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -468,7 +518,8 @@ class _SellerCreateGigState extends State<SellerCreateGig> {
               itemBuilder: (context, index) {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8.0),
-                  child: Image.file(_images[index], width: 100, height: 100, fit: BoxFit.cover),
+                  child: Image.file(_images[index],
+                      width: 100, height: 100, fit: BoxFit.cover),
                 );
               },
             ),
@@ -492,11 +543,17 @@ class _SellerCreateGigState extends State<SellerCreateGig> {
     );
   }
 
-  Future<void> _pickImage() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
+  Future<void> _pickImages() async {
+    final List<XFile>? images = await _picker.pickMultiImage();
+
+    if (images != null && images.isNotEmpty) {
       setState(() {
-        _images.add(File(image.path));
+        _images.addAll(images.map((image) {
+          File file = File(image.path); // Keep the File object
+          String fileName = path.basename(image.path); // Extract file name if needed
+          print('File name: $fileName'); // You can use the file name here
+          return file; // Store the File object in _images
+        }).toList());
       });
     }
   }
@@ -511,15 +568,38 @@ class _SellerCreateGigState extends State<SellerCreateGig> {
         );
         final htmlContent = converter.convert();
 
-        var request = http.MultipartRequest('POST', Uri.parse('${apiService.baseUrl}store-gig'));
+        var request = http.MultipartRequest(
+            'POST', Uri.parse('${apiService.baseUrl}store-gig')
+        );
 
+        // Add text fields and other form data
         _addTextFields(request, htmlContent);
-        await _addImageFile(request);
+
+        // Check if images are selected
+        if (_images.isNotEmpty) {
+          // Add multiple images to the request
+          for (var image in _images) {
+            var file = await http.MultipartFile.fromPath(
+                'gig_img[]', // If the API expects multiple images, adjust the key to 'gig_img[]'
+                image.path,
+                filename: path.basename(image.path)
+            );
+            request.files.add(file);
+          }
+        } else {
+          // Handle the case where no images are selected (optional)
+          print('No images selected.');
+          // You can either skip adding any image or add 'null' or placeholder data depending on the API requirements.
+        }
+
+        // Add authorization headers if required
         await _addAuthorizationHeader(request);
 
+        // Send the request
         var streamedResponse = await request.send();
         var response = await http.Response.fromStream(streamedResponse);
 
+        // Handle the response
         _handleResponse(response);
       } catch (e) {
         _showErrorSnackBar('An error occurred: $e');
@@ -536,29 +616,17 @@ class _SellerCreateGigState extends State<SellerCreateGig> {
       var package = entry.key.toLowerCase();
       var controllers = entry.value;
       request.fields['${package}_description'] = controllers.description.text;
-      request.fields['${package}_delivery_time'] = controllers.deliveryTime.value ?? '';
+      request.fields['${package}_delivery_time'] =
+          controllers.deliveryTime.value ?? '';
       request.fields['${package}_revision'] = controllers.revision.value ?? '';
       request.fields['${package}_price'] = controllers.price.text;
     }
   }
-
-  Future<void> _addImageFile(http.MultipartRequest request) async {
-    if (_images.isNotEmpty) {
-      var file = await http.MultipartFile.fromPath(
-          'gig_img',
-          _images[0].path,
-          filename: path.basename(_images[0].path)
-      );
-      request.files.add(file);
-    }
-  }
-
   Future<void> _addAuthorizationHeader(http.MultipartRequest request) async {
     var prefs = await SharedPreferences.getInstance();
     var token = prefs.getString('token') ?? '';
     request.headers['Authorization'] = 'Bearer $token';
   }
-
   void _handleResponse(http.Response response) {
     var result = jsonDecode(response.body);
     if (response.statusCode == 200) {
@@ -570,11 +638,17 @@ class _SellerCreateGigState extends State<SellerCreateGig> {
   }
 
   void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    CustomSnackBar(
+      message: message,
+      backgroundColor: Colors.green,
+    ).show(context);
   }
 
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    CustomSnackBar(
+      message: message,
+      backgroundColor: Colors.red,
+    ).show(context);
   }
 
   @override
