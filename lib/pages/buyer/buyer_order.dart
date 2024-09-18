@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
-
+import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:work_zone/widgets/bottom_navigation_bar_buyer.dart';
+import 'package:work_zone/widgets/colors.dart';
+import 'package:shimmer/shimmer.dart';
+
+import '../../service/api_service.dart';
 
 class BuyerOrder extends StatefulWidget {
   const BuyerOrder({Key? key}) : super(key: key);
@@ -12,63 +16,39 @@ class BuyerOrder extends StatefulWidget {
 
 class _BuyerOrderState extends State<BuyerOrder> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  List<String> tabs = ['Active', 'Pending', 'Completed', 'Cancelled'];
-
-  // Sample order data - in a real app, this would come from an API or database
-  final List<OrderCard> allOrders = [
-    OrderCard(
-      orderId: 'F025E15',
-      orderDate: DateTime(2024, 8, 17),
-      duration: Duration(days: 3),
-      seller: 'Shaidul Islam',
-      title: 'Mobile UI UX design or app UI UX design',
-      amount: 5.00,
-      status: 'Active',
-    ),
-    OrderCard(
-      orderId: 'F025E16',
-      orderDate: DateTime(2024, 8, 17),
-      duration: Duration(days: 2),
-      seller: 'John Doe',
-      title: 'Web Development Project',
-      amount: 10.00,
-      status: 'Pending',
-    ),
-    // OrderCard(
-    //   orderId: 'F025E17',
-    //   orderDate: DateTime(2024, 8, 17),
-    //   duration: Duration(days: 1),
-    //   seller: 'Jane Smith',
-    //   title: 'Logo Design',
-    //   amount: 3.00,
-    //   status: 'Completed',
-    // ),
-    OrderCard(
-      orderId: 'F025E18',
-      orderDate: DateTime(2024, 8, 17),
-      duration: Duration(days: 4),
-      seller: 'Bob Johnson',
-      title: 'Content Writing',
-      amount: 7.00,
-      status: 'Cancelled',
-    ),
-    OrderCard(
-      orderId: 'F025E18',
-      orderDate: DateTime(2024, 8, 17),
-      duration: Duration(days: 4),
-      seller: 'Bob Johnson',
-      title: 'Content Writing',
-      amount: 7.00,
-      status: 'Active',
-    ),
-  ];
+  final List<String> tabs = ['Active', 'Pending', 'Completed', 'Cancelled'];
+  List<Map<String, dynamic>> allOrders = [];
+  bool isLoading = true;
+  final ApiService apiService = ApiService();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: tabs.length, vsync: this);
+    fetchOrders();
   }
 
+  Future<void> fetchOrders() async {
+    try {
+      final orders = await apiService.getBuyerOrders();
+      if (mounted) {
+        setState(() {
+          allOrders = orders;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error fetching orders: $e');
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    }
+  }
   @override
   void dispose() {
     _tabController.dispose();
@@ -76,7 +56,24 @@ class _BuyerOrderState extends State<BuyerOrder> with SingleTickerProviderStateM
   }
 
   List<OrderCard> getOrdersByStatus(String status) {
-    return allOrders.where((order) => order.status == status).toList();
+    // var image =  apiService.baseUrlImg + order['gig_img'];
+    return allOrders
+        .where((order) => order['status'] == status)
+        .map((order) => OrderCard(
+      orderId: order['id'].toString(),
+      orderDate: DateTime.parse(order['created_at']),
+      duration: Duration(days: int.parse(order['delivery_time'].split(' ')[0])),
+      seller: order['seller_name'],
+      title: order['gig_title'],
+      amount: double.parse(order['price']),
+      status: order['status'],
+
+      image: (order['gig_img'] != null && order['gig_img'].isNotEmpty)
+          ? apiService.baseUrlImg + order['gig_img']
+          : "http://10.10.0.100:500/gigs/1726647309.png",
+
+    ))
+        .toList();
   }
 
   @override
@@ -84,40 +81,76 @@ class _BuyerOrderState extends State<BuyerOrder> with SingleTickerProviderStateM
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Orders'),
+        title: const Text('My Orders'),
+        backgroundColor: primary,
       ),
       body: Column(
         children: [
-          TabBar(
-            controller: _tabController,
-            tabs: tabs.map((String tab) => Tab(text: tab)).toList(),
-            isScrollable: true,
-            labelColor: Colors.green,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: Colors.green,
+          AnimatedBuilder(
+            animation: _tabController.animation!,
+            builder: (context, child) {
+              return Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.2),
+                      spreadRadius: 1,
+                      blurRadius: 3,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  tabs: tabs.map((String tab) => Tab(text: tab)).toList(),
+                  labelColor: primary,
+                  unselectedLabelColor: Colors.grey,
+                  indicatorColor: primary,
+                  indicatorWeight: 3,
+                  labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                  unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal),
+                ),
+              );
+            },
           ),
           Expanded(
-            child: TabBarView(
+            child: isLoading
+                ? OrdersSkeleton()
+                : TabBarView(
               controller: _tabController,
               children: tabs.map((String tab) {
                 List<OrderCard> filteredOrders = getOrdersByStatus(tab);
-                return filteredOrders.isEmpty
-                    ? Center(child: Text('No $tab orders'))
-                    : ListView(children: filteredOrders);
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: filteredOrders.isEmpty
+                      ? Center(child: Text('No $tab orders'))
+                      : ListView.builder(
+                    itemCount: filteredOrders.length,
+                    itemBuilder: (context, index) {
+                      return AnimatedOpacity(
+                        duration: Duration(milliseconds: 300),
+                        opacity: 1,
+                        child: filteredOrders[index],
+                      );
+                    },
+                  ),
+                );
               }).toList(),
             ),
           ),
         ],
       ),
-      bottomNavigationBar: CustomBottomNavigationBarBuyer(currentIndex: 3),
+      bottomNavigationBar: const CustomBottomNavigationBarBuyer(currentIndex: 3),
     );
   }
 }
 
-class OrderCard extends StatefulWidget {
+class OrderCard extends StatelessWidget {
   final String orderId;
   final DateTime orderDate;
   final Duration duration;
@@ -125,6 +158,7 @@ class OrderCard extends StatefulWidget {
   final String title;
   final double amount;
   final String status;
+  final String image;
 
   const OrderCard({
     Key? key,
@@ -135,111 +169,179 @@ class OrderCard extends StatefulWidget {
     required this.title,
     required this.amount,
     required this.status,
+    required this.image,
   }) : super(key: key);
 
   @override
-  _OrderCardState createState() => _OrderCardState();
-}
-
-class _OrderCardState extends State<OrderCard> {
-  late Timer _timer;
-  late int _remainingSeconds;
-
-  @override
-  void initState() {
-    super.initState();
-    _calculateRemainingTime();
-    startTimer();
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
-
-  void _calculateRemainingTime() {
-    DateTime endTime = widget.orderDate.add(widget.duration);
-    Duration remaining = endTime.difference(DateTime.now());
-    _remainingSeconds = remaining.inSeconds > 0 ? remaining.inSeconds : 0;
-  }
-
-  void startTimer() {
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-      setState(() {
-        if (_remainingSeconds > 0) {
-          _remainingSeconds--;
-        } else {
-          _timer.cancel();
-        }
-      });
-    });
-  }
-
-  String formatTime(int seconds) {
-    int days = seconds ~/ 86400;
-    int hours = (seconds % 86400) ~/ 3600;
-    int minutes = (seconds % 3600) ~/ 60;
-    int remainingSeconds = seconds % 60;
-    return '$days:${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
-  }
-
-  @override
   Widget build(BuildContext context) {
-    List<String> timeUnits = formatTime(_remainingSeconds).split(':');
-
     return Card(
-      margin: EdgeInsets.all(8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Order ID #${widget.orderId}', style: TextStyle(fontWeight: FontWeight.bold)),
-                Row(
-                  children: List.generate(4, (index) {
-                    return Container(
-                      margin: EdgeInsets.symmetric(horizontal: 2),
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        timeUnits[index],
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    );
-                  }),
+                Text('Order #$orderId', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                _buildStatusChip(status),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    image,
+                    height: 40,
+                    width: 40,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+                      const SizedBox(height: 4),
+                      Text('Seller: $seller', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                      const SizedBox(height: 4),
+                      Text('Due: ${DateFormat('MMM dd, yyyy').format(orderDate.add(duration))}',
+                          style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                    ],
+                  ),
                 ),
               ],
             ),
-            SizedBox(height: 8),
-            Text('Seller: ${widget.seller} | ${widget.orderDate.toString().split(' ')[0]}'),
-            SizedBox(height: 8),
-            _buildOrderDetail('Title', widget.title),
-            _buildOrderDetail('Duration', '${widget.duration.inDays} Days'),
-            _buildOrderDetail('Amount', '\$ ${widget.amount.toStringAsFixed(2)}'),
-            _buildOrderDetail('Status', widget.status),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Rs. ${amount.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, color: primary, fontSize: 16)),
+                OutlinedButton(
+                  onPressed: () {
+                    // TODO: Implement order details navigation
+                  },
+                  child: const Text('View Details'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: primary,
+                    side: BorderSide(color: primary),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildOrderDetail(String label, String value) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(width: 80, child: Text('$label :', style: TextStyle(fontWeight: FontWeight.bold))),
-          Expanded(child: Text(value)),
-        ],
-      ),
+  Widget _buildStatusChip(String status) {
+    Color chipColor;
+    switch (status.toLowerCase()) {
+      case 'active':
+        chipColor = Colors.green;
+        break;
+      case 'pending':
+        chipColor = Colors.orange;
+        break;
+      case 'completed':
+        chipColor = Colors.blue;
+        break;
+      case 'cancelled':
+        chipColor = Colors.red;
+        break;
+      default:
+        chipColor = Colors.grey;
+    }
+
+    return Chip(
+      label: Text(status, style: const TextStyle(color: Colors.white, fontSize: 12)),
+      backgroundColor: chipColor,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+    );
+  }
+}
+
+class OrdersSkeleton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      itemCount: 3,
+      itemBuilder: (context, index) {
+        return Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Container(
+              height: 200,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    height: 24,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              height: 16,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              width: 100,
+                              height: 12,
+                              color: Colors.white,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 20,
+                        color: Colors.white,
+                      ),
+                      Container(
+                        width: 100,
+                        height: 30,
+                        color: Colors.white,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

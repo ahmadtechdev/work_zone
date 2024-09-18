@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,13 +12,14 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 import '../../service/api_service.dart';
 import '../../widgets/colors.dart';
+import '../../widgets/snackbar.dart';
 import 'seller_create_gig.dart';
 import 'seller_manage_gig.dart';
 
 class SellerEditGig extends StatefulWidget {
   final int gigId;
 
-  SellerEditGig({super.key, required this.gigId});
+  const SellerEditGig({super.key, required this.gigId});
 
   @override
   _SellerEditGigState createState() => _SellerEditGigState();
@@ -249,20 +251,32 @@ class _SellerEditGigState extends State<SellerEditGig> {
         _titleController.text = gigData['gig']['title'];
         _selectedCategory = gigData['gig']['category'];
 
-        _packageControllers['Basic']!.description.text = gigData['gig']['basic_description'];
-        _packageControllers['Basic']!.deliveryTime.value = gigData['gig']['basic_delivery_time'];
-        _packageControllers['Basic']!.revision.value = gigData['gig']['basic_revision'];
-        _packageControllers['Basic']!.price.text = gigData['gig']['basic_price'].toString();
+        _packageControllers['Basic']!.description.text =
+            gigData['gig']['basic_description'];
+        _packageControllers['Basic']!.deliveryTime.value =
+            gigData['gig']['basic_delivery_time'];
+        _packageControllers['Basic']!.revision.value =
+            gigData['gig']['basic_revision'];
+        _packageControllers['Basic']!.price.text =
+            gigData['gig']['basic_price'].toString();
 
-        _packageControllers['Standard']!.description.text = gigData['gig']['standard_description'];
-        _packageControllers['Standard']!.deliveryTime.value = gigData['gig']['standard_delivery_time'];
-        _packageControllers['Standard']!.revision.value = gigData['gig']['standard_revision'];
-        _packageControllers['Standard']!.price.text = gigData['gig']['standard_price'].toString();
+        _packageControllers['Standard']!.description.text =
+            gigData['gig']['standard_description'];
+        _packageControllers['Standard']!.deliveryTime.value =
+            gigData['gig']['standard_delivery_time'];
+        _packageControllers['Standard']!.revision.value =
+            gigData['gig']['standard_revision'];
+        _packageControllers['Standard']!.price.text =
+            gigData['gig']['standard_price'].toString();
 
-        _packageControllers['Premium']!.description.text = gigData['gig']['premium_description'];
-        _packageControllers['Premium']!.deliveryTime.value = gigData['gig']['premium_delivery_time'];
-        _packageControllers['Premium']!.revision.value = gigData['gig']['premium_revision'];
-        _packageControllers['Premium']!.price.text = gigData['gig']['premium_price'].toString();
+        _packageControllers['Premium']!.description.text =
+            gigData['gig']['premium_description'];
+        _packageControllers['Premium']!.deliveryTime.value =
+            gigData['gig']['premium_delivery_time'];
+        _packageControllers['Premium']!.revision.value =
+            gigData['gig']['premium_revision'];
+        _packageControllers['Premium']!.price.text =
+            gigData['gig']['premium_price'].toString();
 
         final document = Document.fromHtml(gigData['gig']['description']);
         _descriptionController = QuillController(
@@ -271,13 +285,18 @@ class _SellerEditGigState extends State<SellerEditGig> {
         );
 
         if (gigData['gig']['gig_img'] != null) {
-          _images.add(File('${apiService.baseUrlImg}${gigData['gig']['gig_img']}'));
+          List<String> imagePaths = gigData['gig']['gig_img'].split(',');
+
+          for (String path in imagePaths) {
+            _images.add(File('${apiService.baseUrlImg}$path'));
+          }
         }
       });
     } catch (e) {
       print('Error loading gig data: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to load gig data. Please try again.')),
+        const SnackBar(
+            content: Text('Failed to load gig data. Please try again.')),
       );
     }
   }
@@ -292,10 +311,13 @@ class _SellerEditGigState extends State<SellerEditGig> {
         );
         final htmlContent = converter.convert();
 
-        var request = http.MultipartRequest('POST', Uri.parse('${apiService.baseUrl}update-gig/${widget.gigId}'));
+        var request = http.MultipartRequest(
+          'POST',
+          Uri.parse('${apiService.baseUrl}update-gig/${widget.gigId}'),
+        );
 
         _addTextFields(request, htmlContent);
-        await _addImageFile(request);
+        await _addImages(request);
         await _addAuthorizationHeader(request);
 
         var streamedResponse = await request.send();
@@ -317,22 +339,42 @@ class _SellerEditGigState extends State<SellerEditGig> {
       var package = entry.key.toLowerCase();
       var controllers = entry.value;
       request.fields['${package}_description'] = controllers.description.text;
-      request.fields['${package}_delivery_time'] = controllers.deliveryTime.value ?? '';
+      request.fields['${package}_delivery_time'] =
+          controllers.deliveryTime.value ?? '';
       request.fields['${package}_revision'] = controllers.revision.value ?? '';
       request.fields['${package}_price'] = controllers.price.text;
     }
   }
 
-  Future<void> _addImageFile(http.MultipartRequest request) async {
-    if (_images.isNotEmpty) {
+  Future<void> _addImages(http.MultipartRequest request) async {
+    for (var image in _images) {
       var file = await http.MultipartFile.fromPath(
-          'gig_img',
-          _images[0].path,
-          filename: path.basename(_images[0].path)
+        'gig_img[]',
+        image.path,
+        filename: path.basename(image.path),
       );
       request.files.add(file);
     }
   }
+
+  // Future<void> _addImages(http.MultipartRequest request) async {
+  //   for (var image in _images) {
+  //     // Check if the image is from a URL (network image)
+  //     if (image.path.startsWith('http') || image.path.startsWith('https')) {
+  //       // If it's an existing image from a URL, send the image URL as a field
+  //       request.fields['existing_gig_img[]'] = image.path;
+  //     } else {
+  //       // If it's a new image selected from local storage, upload it as a file
+  //       var file = await http.MultipartFile.fromPath(
+  //         'gig_img[]',
+  //         image.path,
+  //         filename: path.basename(image.path),
+  //       );
+  //       request.files.add(file);
+  //     }
+  //   }
+  // }
+
 
   Future<void> _addAuthorizationHeader(http.MultipartRequest request) async {
     var prefs = await SharedPreferences.getInstance();
@@ -351,11 +393,17 @@ class _SellerEditGigState extends State<SellerEditGig> {
   }
 
   void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    CustomSnackBar(
+      message: message,
+      backgroundColor: Colors.green,
+    ).show(context);
   }
 
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    CustomSnackBar(
+      message: message,
+      backgroundColor: Colors.red,
+    ).show(context);
   }
 
   @override
@@ -376,9 +424,8 @@ class _SellerEditGigState extends State<SellerEditGig> {
               _buildCategoryDropdown(),
               _buildDescriptionField(),
               _buildSectionTitle('Pricing Packages'),
-              ..._packageControllers.entries.map((entry) =>
-                  _buildPricingPackageCard(entry.key, entry.value)
-              ),
+              ..._packageControllers.entries.map(
+                  (entry) => _buildPricingPackageCard(entry.key, entry.value)),
               _buildSectionTitle('Upload Gig Images'),
               _buildImageUploader(),
               const SizedBox(height: 24),
@@ -393,11 +440,13 @@ class _SellerEditGigState extends State<SellerEditGig> {
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+      child: Text(title,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, {int maxLines = 1}) {
+  Widget _buildTextField(String label, TextEditingController controller,
+      {int maxLines = 1}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
@@ -407,7 +456,8 @@ class _SellerEditGigState extends State<SellerEditGig> {
           labelText: label,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         ),
-        validator: (value) => value?.isEmpty ?? true ? 'Please enter $label' : null,
+        validator: (value) =>
+            value?.isEmpty ?? true ? 'Please enter $label' : null,
       ),
     );
   }
@@ -422,8 +472,10 @@ class _SellerEditGigState extends State<SellerEditGig> {
               value: _selectedCategory.isEmpty ? null : _selectedCategory,
               decoration: InputDecoration(
                 labelText: 'Category',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
               ),
               items: _buildDropdownItems(),
               onChanged: (String? newValue) {
@@ -431,7 +483,8 @@ class _SellerEditGigState extends State<SellerEditGig> {
                   setState(() => _selectedCategory = newValue);
                 }
               },
-              validator: (value) => value == null ? 'Please select a category' : null,
+              validator: (value) =>
+                  value == null ? 'Please select a category' : null,
               isDense: true,
               isExpanded: true,
               icon: const Icon(Icons.arrow_drop_down),
@@ -439,7 +492,7 @@ class _SellerEditGigState extends State<SellerEditGig> {
               elevation: 16,
               style: const TextStyle(color: Colors.black, fontSize: 16),
               dropdownColor: Colors.white,
-              menuMaxHeight: MediaQuery.sizeOf(context).height/1.75,
+              menuMaxHeight: MediaQuery.sizeOf(context).height / 1.75,
             ),
           );
         },
@@ -453,15 +506,17 @@ class _SellerEditGigState extends State<SellerEditGig> {
       items.add(DropdownMenuItem<String>(
         value: '__GROUP__${group.name}',
         enabled: false,
-        child: Text(group.name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+        child: Text(group.name,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold, color: Colors.grey)),
       ));
       items.addAll(group.items.map((item) => DropdownMenuItem<String>(
-        value: item,
-        child: Padding(
-          padding: const EdgeInsets.only(left: 16.0),
-          child: Text(item, overflow: TextOverflow.ellipsis),
-        ),
-      )));
+            value: item,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 16.0),
+              child: Text(item, overflow: TextOverflow.ellipsis),
+            ),
+          )));
     }
     return items;
   }
@@ -472,7 +527,8 @@ class _SellerEditGigState extends State<SellerEditGig> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Description', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text('Description',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Container(
             height: 300,
@@ -534,7 +590,8 @@ class _SellerEditGigState extends State<SellerEditGig> {
     );
   }
 
-  Widget _buildPricingPackageCard(String title, PackageControllers controllers) {
+  Widget _buildPricingPackageCard(
+      String title, PackageControllers controllers) {
     return Card(
       elevation: 4,
       margin: const EdgeInsets.only(bottom: 16),
@@ -543,9 +600,12 @@ class _SellerEditGigState extends State<SellerEditGig> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(title,
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            _buildTextField('Description', controllers.description, maxLines: 3),
+            _buildTextField('Description', controllers.description,
+                maxLines: 3),
             _buildDropdown(
                 'Delivery Time', controllers.deliveryTime, deliveryTimeOptions),
             _buildDropdown('Revision', controllers.revision, [
@@ -568,7 +628,8 @@ class _SellerEditGigState extends State<SellerEditGig> {
     );
   }
 
-  Widget _buildDropdown(String label, ValueNotifier<String?> valueNotifier, List<String> items) {
+  Widget _buildDropdown(
+      String label, ValueNotifier<String?> valueNotifier, List<String> items) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: ValueListenableBuilder<String?>(
@@ -578,7 +639,8 @@ class _SellerEditGigState extends State<SellerEditGig> {
             value: value,
             decoration: InputDecoration(
               labelText: label,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
             ),
             items: items.map((String item) {
               return DropdownMenuItem<String>(value: item, child: Text(item));
@@ -594,11 +656,12 @@ class _SellerEditGigState extends State<SellerEditGig> {
       ),
     );
   }
+
   Widget _buildImageUploader() {
     return Column(
       children: [
         OutlinedButton(
-          onPressed: _pickImage,
+          onPressed: _pickImages,
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -618,13 +681,55 @@ class _SellerEditGigState extends State<SellerEditGig> {
               itemBuilder: (context, index) {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8.0),
-                  child: Image.file(_images[index], width: 100, height: 100, fit: BoxFit.cover),
+                  child: Stack(
+                    children: [
+                      _buildImageWidget(_images[index]),
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: GestureDetector(
+                          onTap: () => _removeImage(index),
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.close, color: Colors.white, size: 16),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
           ),
       ],
     );
+  }
+
+  Widget _buildImageWidget(dynamic image) {
+    // Check if the image path starts with 'http' or 'https' (network image)
+    if (image.path.startsWith('https')) {
+      String fullUrl = '${image.path}';
+      return CachedNetworkImage(
+        imageUrl: fullUrl,
+        width: 100,
+        height: 100,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => const CircularProgressIndicator(),
+        errorWidget: (context, url, error) => const Icon(Icons.error),
+      );
+    } else {
+      // If not, treat it as a local file path and use Image.file
+      return Image.file(
+        File(image.path),
+        width: 100,
+        height: 100,
+        fit: BoxFit.cover,
+      );
+    }
   }
 
   Widget _buildSubmitButton() {
@@ -642,12 +747,19 @@ class _SellerEditGigState extends State<SellerEditGig> {
     );
   }
 
-  Future<void> _pickImage() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
+  Future<void> _pickImages() async {
+    final List<XFile>? images = await _picker.pickMultiImage();
+
+    if (images != null && images.isNotEmpty) {
       setState(() {
-        _images.add(File(image.path));
+        _images.addAll(images.map((image) => File(image.path)));
       });
     }
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      _images.removeAt(index);
+    });
   }
 }

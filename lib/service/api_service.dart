@@ -7,10 +7,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as path;
 
 class ApiService {
-  // final String baseUrl = "http://10.10.0.72:500/api/";
-  // final String baseUrlImg = "http://10.10.0.72:500/";
-  final String baseUrl = "https://miftag.com/api/";
-  final String baseUrlImg = "https://miftag.com/public/";
+  final String baseUrl = "http://10.10.0.100:500/api/";
+  final String baseUrlImg = "http://10.10.0.100:500/";
+  // final String baseUrl = "https://miftag.com/api/";
+  // final String baseUrlImg = "https://miftag.com/public/";
 
 
   Future<Map<String, dynamic>> post(String endpoint, Map<String, dynamic> body) async {
@@ -88,7 +88,19 @@ class ApiService {
       throw Exception('Network error or unexpected issue: $e');
     }
   }
-
+  Future<List<Map<String, dynamic>>> getBuyerOrders() async {
+    try {
+      final response = await get('buyer-orders');
+      if (response['success'] == true && response['orders'] is List) {
+        return List<Map<String, dynamic>>.from(response['orders']);
+      } else {
+        throw Exception('Invalid response format');
+      }
+    } catch (e) {
+      print('Error fetching buyer orders: $e');
+      rethrow;
+    }
+  }
 
   Future<Map<String, dynamic>> deleteAccount() async {
     final prefs = await SharedPreferences.getInstance();

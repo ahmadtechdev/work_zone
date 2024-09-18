@@ -29,6 +29,7 @@ class _SignUpState extends State<SignUp> {
   final addressController = TextEditingController();
   bool _isLoading = false;
   String _selectedType = "buyer";
+  // String _isInfluencer = "No";
   final _formKey = GlobalKey<FormState>();
 
   Map<String, List<String>> countryCityMap = {
@@ -127,8 +128,8 @@ class _SignUpState extends State<SignUp> {
         _buildCountryPicker(),
         const SizedBox(height: 10.0),
         if (cities.isNotEmpty) _buildCityDropdown(),
-        const SizedBox(height: 10.0),
-        _buildTextFormField(addressController, "Address", "Please enter address", 3),
+        // const SizedBox(height: 10.0),
+        // _buildTextFormField(addressController, "Address", "Please enter address", 3),
         const SizedBox(height: 10.0),
         _buildTextFormField(passwordController, "Password", "Please enter a password", 0, isPassword: true),
       ],
